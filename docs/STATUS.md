@@ -13,13 +13,11 @@ MSI set plus the 74154 and 74157, rolled out one chip first (D23). The agent gen
 and UI to "block" chips (D24) and built the 74138. Screenshots:
 `docs/img/2026-11-02-74138-first-pass-1280x720.png` and `…-dark-1280x720.png`.
 
-**Uncommitted work.** Everything since commit `2673b71` is uncommitted: session 3's restyle and
-session 4's MSI work. Commit only when the user asks (see `CLAUDE.md`).
+**Committed and pushed** as `ae80f0f` (session 3's restyle plus session 4's MSI work).
 
 **Start the next session by:**
 1. getting the user's review of the 74138 page (layout, function table, bus row, wording);
-2. asking whether to commit and push, if still uncommitted;
-3. then building the remaining Lecture 8 chips (Next steps).
+2. then building the remaining Lecture 8 chips (Next steps).
 
 ## Done
 
@@ -83,8 +81,7 @@ scratchpads, not the repo. `CLAUDE.md` → "Verifying UI changes" explains how t
    (priority encoders; the 74148 has EI/EO/GS), 74157 (shared select/enable), 74151 (12 inputs) and
    7485 (11 inputs). The last two need **input buses** in the timing diagram (e.g. D7–D0 as one
    row), since one row per input won't fit.
-3. **Commit** when the user says so.
-4. Contrast fixes (bug #6), content review (D19), 1024×768 (bug #7), IEEE/IEC toggle, hosting:
+3. Contrast fixes (bug #6), content review (D19), 1024×768 (bug #7), IEEE/IEC toggle, hosting:
    unchanged from session 3.
 
 ## Open questions for the user
@@ -187,4 +184,4 @@ Chrome hang in session 3.
 - **2026-11-02 (session 4).** The user asked to start the server and add the ICs from Lecture 8.
   The deck was read and mapped. The user chose the chips and a one-chip-first rollout (D23). The
   agent added block-chip support (D24) and built the 74138, verified with tests, measurements
-  and scripted interactions at 1280×720, 1440×810 and in dark mode. **Not committed.**
+  and scripted interactions at 1280×720, 1440×810 and in dark mode. Committed and pushed (`ae80f0f`).
