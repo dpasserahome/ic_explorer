@@ -1,9 +1,9 @@
 import { truthTable } from '../sim/logic';
-import type { Bit, ChipDef } from '../sim/types';
+import type { Bit, GateChipDef } from '../sim/types';
 import { noPointerFocus } from './noPointerFocus';
 
 interface Props {
-  chip: ChipDef;
+  chip: GateChipDef;
   values: Record<number, Bit>;
   focus: number;
   onSetInputs: (gateIndex: number, bits: Bit[]) => void;
@@ -17,7 +17,7 @@ export function TruthTable({ chip, values, focus, onSetInputs }: Props) {
 
   return (
     <section className="panel truth">
-      <div className="panel-title">Truth table · Gate {gate.id}</div>
+      <div className="panel-title">Truth table: gate {gate.id}</div>
       <table className="truth-table">
         <thead>
           <tr>

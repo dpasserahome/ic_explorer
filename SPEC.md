@@ -52,10 +52,39 @@ All are 14-pin DIP, with VCC on pin 14 and GND on pin 7.
   inputs.
 - **Idealized timing.** Outputs change instantly with inputs. See "Deferred: propagation delay".
 
+### Scope extension: Lecture 8 MSI chips (D23)
+
+The user asked to add the ICs from Lecture 8 (code converters, multiplexers, demultiplexers) and
+chose these, rolled out **one chip first** (the 74138), then the rest after review:
+
+| Chip | Function | Package | Status |
+|------|----------|---------|--------|
+| 74138 | 3-to-8 line decoder (1-of-8), active-LOW outputs | 16-pin | **built, awaiting review** |
+| 74139 | Dual 2-to-4 decoder / demultiplexer | 16-pin | planned |
+| 74154 | 4-to-16 decoder / demultiplexer | **24-pin** | planned |
+| 7442 | BCD-to-decimal decoder (1-of-10) | 16-pin | planned |
+| 74147 | Decimal-to-BCD (10-to-4) priority encoder | 16-pin | planned |
+| 74148 | Octal-to-binary (8-to-3) priority encoder | 16-pin | planned |
+| 74151 | 8-to-1 multiplexer | 16-pin | planned |
+| 74157 | Quad 2-to-1 multiplexer (only in the deck's Table 8-6) | 16-pin | planned |
+| 7485 | 4-bit magnitude comparator | 16-pin | planned |
+
+Not chosen: 7447 BCD-to-7-segment (lamp test/ripple blanking), 74184 (BCD-to-binary PROM), and
+the 4051 analog mux (analog, outside the 0/1 model).
+
+**MSI page layout (D24, awaiting review):** the gate chips' layout doesn't fit chips whose outputs
+depend on all inputs together. An MSI chip page has the header, then a tall **pin diagram** on the
+left (the package with one function block wired to every pin, bubbles on active-LOW pins), and on
+the right the **function table** (the datasheet's rows with X = don't care, computed outputs, the
+current row highlighted, click a row to set the inputs, a live status line underneath) above the
+**timing diagram** (one row per input pin plus the outputs summarized as one bus row). There's no
+focused-gate panel.
+
 ## Screen layout
 
-The user approved this layout (`wireframes/wireframe-v2-user-revision.png`). The 7408
-implementation matches it (`docs/img/2026-11-02-7408-first-pass-1280x720.png`).
+The user approved this layout (`wireframes/wireframe-v2-user-revision.png`). The app matches it.
+Current look: `docs/img/2026-11-02-7408-untitled-restyle-1280x720.png` (see "Visual design"
+below).
 
 ```
 ┌──────────┬────────────────────────────────────────────────────────────────────┐
@@ -94,10 +123,13 @@ The user removed these from the earlier wireframe:
 - The v1 chips in a "Basic gates" group, with the part number and short title. Chips not built
   yet are listed but disabled ("soon").
 - Selecting a chip loads its page with fresh state.
+- **Collapsible** (user's request, D21). A control at the bottom collapses the nav to a narrow
+  rail of part numbers, giving the panels more width. The browser remembers the choice.
 
 ### Header
-- Part number (largest text on the page), title, subtitle ("4 independent gates · 14-pin DIP").
-- Boolean equation, plus the deck's "read as" phrasing.
+- Part number (largest text on the page), title, and the subtitle shown as badges
+  ("4 independent gates", "14-pin DIP").
+- Boolean equation, plus the deck's "read as" phrasing, together in a tinted box.
 - **Overview:** two or three sentences on what the chip is, how it behaves and what it's
   typically used for, using the deck's application examples (e.g. AND as an enable gate, the
   bank-alarm example).
@@ -111,7 +143,9 @@ The user removed these from the earlier wireframe:
 - **Pin-level signal tracing** (a must-have). Hovering a pin highlights its signal path (pin →
   gate → output pin) and dims the other gates. Clicking an input pin toggles it. Clicking any pin
   or gate makes that gate the focused gate.
-- **Pin inspector** (below the package) explains the hovered or selected pin in plain language:
+- **Pin inspector**: a slim strip below the package, not a tooltip, so a clicked pin's text
+  stays put on a projector (D21). When nothing is hovered or selected it shows a short usage hint.
+  It explains the hovered or selected pin in plain language:
   - input: which gate reads it, its value, and which output pin it affects
   - output: the gate's equation with live values, and that outputs can't be set directly
   - VCC/GND: shared by every gate, and the chip does nothing without power
@@ -140,12 +174,30 @@ The user removed these from the earlier wireframe:
 - **Editing.** Clicking an input row at a step (without dragging off it) flips that input at
   that step. The output
   recomputes, and the cursor jumps there.
-- **Controls:** ◀ ▶ step, Play/Pause (loops), ← → keys, and Space to play/pause.
-- **Presets** (apply to the focused gate):
+- **Controls:** ‹ › step, Play/Pause (loops), ← → keys, and Space to play/pause.
+- **Presets** (apply to the focused gate). The selected preset shows as active, and each gate
+  remembers its own. Once the learner changes that gate's inputs by hand (flipping a step,
+  toggling a pin or picking a truth-table row), no preset is active and an "Edited" badge shows
+  instead (user's request, D22):
   - All combinations: 00, 01, 10, 11, each held for 2 steps
   - Clock + enable: A is a clock, B is HIGH for steps 4–11 (the deck's enable/disable examples)
   - Random
   - Clear
+
+## Visual design
+
+- **Reference: Untitled UI** (user's direction, D22). The app should look like a polished
+  production product, not "something a software engineer would 'whip up'". It should still stay
+  simple, educational and readable. The look is recreated in plain CSS: Untitled UI's gray scale,
+  white cards with a hairline border and a faint shadow, and its button, segmented-control and
+  badge styles. No UI kit.
+- **Font:** Inter, bundled with the app so it works offline in a classroom.
+- **Signal colors:** green = 1/HIGH, gray = LOW wires, orange only for focus, cursor and
+  selection. Printed 0s use the normal text color, because gray digits read as "disabled". Every
+  value is also printed as 1/0.
+- **Restraint:** one primary button (Play), no gradients or decorative animation, and motion only
+  in response to the learner.
+- **Themes:** light and dark follow the OS setting.
 
 ## Shared state & sync
 

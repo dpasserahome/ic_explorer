@@ -1,21 +1,45 @@
 import { useEffect, useState } from 'react';
 import { CATALOG } from './chips';
+import { BlockView } from './components/BlockView';
 import { ChipHeader } from './components/ChipHeader';
 import { ChipView } from './components/ChipView';
 import { FocusedGate } from './components/FocusedGate';
+import { FunctionTable } from './components/FunctionTable';
 import { SideNav } from './components/SideNav';
 import { TimingDiagram } from './components/TimingDiagram';
 import { TruthTable } from './components/TruthTable';
 import type { ChipDef } from './sim/types';
 import { useExplorer } from './state/useExplorer';
 
+const NAV_KEY = 'ic-explorer.nav-collapsed';
+
+function readNavCollapsed() {
+  try {
+    return localStorage.getItem(NAV_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
 export function App() {
   const [part, setPart] = useState('7408');
+  const [navCollapsed, setNavCollapsed] = useState(readNavCollapsed);
   const chip = CATALOG.find((c) => c.part === part)!.chip!;
 
+  const toggleNav = () => {
+    setNavCollapsed((c) => {
+      try {
+        localStorage.setItem(NAV_KEY, c ? '0' : '1');
+      } catch {
+        // Storage can be blocked; the toggle still works for this visit.
+      }
+      return !c;
+    });
+  };
+
   return (
-    <div className="app">
-      <SideNav current={part} onSelect={setPart} />
+    <div className={navCollapsed ? 'app nav-collapsed' : 'app'}>
+      <SideNav current={part} onSelect={setPart} collapsed={navCollapsed} onToggle={toggleNav} />
       {/* Keyed so switching chips starts with fresh state. */}
       <Explorer key={chip.part} chip={chip} />
     </div>
@@ -42,6 +66,22 @@ function Explorer({ chip }: { chip: ChipDef }) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [step, setPlaying]);
+
+  // MSI chips: a tall pin diagram on the left; function table and timing on the right.
+  if (chip.kind === 'block') {
+    return (
+      <main className="explorer block">
+        <ChipHeader chip={chip} />
+        <div className="block-body">
+          <BlockView chip={chip} values={ex.values} onTogglePin={ex.togglePin} />
+          <div className="block-right">
+            <FunctionTable chip={chip} values={ex.values} onSetInputs={ex.setGateInputs} />
+            <TimingDiagram chip={chip} ex={ex} />
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="explorer">

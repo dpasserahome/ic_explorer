@@ -93,7 +93,8 @@ may change:
 - Timing presets: All combinations, Clock + enable (from the deck's enable/disable slides),
   Random, Clear.
 - Colors: **HIGH green, LOW gray, orange only for focus/cursor/selection**. Values are always
-  printed as 1/0 too.
+  printed as 1/0 too. (D21 changed printed 0s from gray to the normal text color. D22 moved the
+  palette to Untitled UI's.)
 - A **compact mode** for screens ≤ 820 px tall keeps the focused gate large on 720p projectors.
 - Keyboard: ← → step, Space plays/pauses (when focus isn't on a control).
 - Play speed: 700 ms per step, looping.
@@ -146,3 +147,83 @@ technical fact (pinouts, pin names, chip behavior), the manufacturer's datasheet
 lecture slides. The decks still set notation, phrasing and teaching content (D19's choices for the
 7402 and 7486 are confirmed by this). Where a deck disagrees with a datasheet, follow the datasheet
 and note the slide error in `docs/CONTENT-MAP.md`. There's no need to ask the user each time.
+
+### D21 · Visual polish pass (2026-11-02 · User approved agent's proposals)
+"Recommend how we can make it feel a little more polished, professional, modern. I do not want to
+overcomplicate it or make it too much. It should remain educational, clear, usable." The agent
+proposed eight changes, and the user approved them with one change to the nav ("Maintain the
+content, but make it look a little tighter and turn it into an expandable/collapsible bar"). The
+user asked whether the pin inspector would become a tooltip. The agent recommended keeping it in
+place as a strip (reasons below), and the user didn't object.
+- **Bigger chip view.** SVG labels enlarged; the pin inspector became a slim, borderless strip
+  (still fixed at 3 lines, still in place, not a tooltip, so a clicked pin's text stays put on a
+  projector); the "Pin diagram" title sits over the drawing's empty top-left corner.
+- **Less orange.** Truth-table row: soft tint with a 4px accent bar. Timing cursor: thin line with
+  a pill on the step number. Nav and gate tabs: a small accent marker, not an orange outline.
+- **0 is ink, not gray.** Gray zeros read as "disabled". 1 stays green; 0 is normal text. Wires
+  keep gray for LOW.
+- **IBM Plex Sans** (bundled via `@fontsource`, works offline), tabular figures. Panel titles in
+  sentence case.
+- **Header:** formula and "read as" in a tinted box; header has a min-height so panels don't shift.
+  The full overview is kept (2 lines would need shorter copy; not done without the user).
+- **Controls:** Play is the one filled button; input presets and gate tabs are segmented groups.
+- **Side nav (user's revision):** same content, tighter, and **collapsible** to a rail of part
+  numbers. The state is remembered per browser (`localStorage`). The gate-icon idea was dropped.
+- **Spacing/radii/borders:** 10px panels, 6px controls, softer borders; dark-mode input waveforms
+  are off-white (`--wave`).
+
+**Superseded in part by D22:** Inter replaced Plex Sans, radii became 12/8 px, the nav's active
+item lost its orange bar (gray fill instead), and the gate tabs' selected segment became white
+with a border instead of an orange underline.
+
+### D22 · Untitled UI as the visual reference; input pattern shows its active state (2026-11-02 · User; details Agent → accepted)
+After D21 the user said the app still looked like "something a software engineer would whip up"
+and asked to "look at Untitled UI or similar production UI system for basic design look-and-feel
+and UX reference." Also: "Inputs bar options in timing diagram need an active state."
+- **Tokens follow Untitled UI:** its gray scale (light and dark), success green for HIGH, orange
+  accent, white cards with a hairline border and `shadow-xs`, 12px card / 8px control radii.
+  **Inter** replaces Plex Sans (bundled). Tabular figures only where numbers line up (tables,
+  timing, step readout), since Inter's tabular "2" spaces out "2-input".
+- **Buttons:** secondary (white, border, shadow) by default; Play is the one primary (dark) button.
+  Line icons (`Icon.tsx`) replace the ◀ ▶ ❚❚ characters.
+- **Segmented controls** (input patterns, gate tabs): gray track, selected segment is white with a
+  border and shadow.
+- **Active input pattern (agent's design):** tracked per gate in `useExplorer` (`pattern`). It
+  starts as All combinations; flipping a step, toggling a pin or picking a different truth-table
+  row clears it and shows an "Edited" badge.
+- **Side nav:** logo mark, gray active item, collapse control at the bottom.
+- **Header:** subtitle shown as badges. Timing hint moved into the panel's title row with key caps,
+  so the controls fit on one line at 1280×720.
+
+The user's response to the result: "Great." **Trade-off to revisit:** Untitled UI's success
+green (`#079455`) is lower in contrast than the old green (3.9:1 vs 4.4:1 on white) and below
+4.5:1 for the ~16 px pin values at 720p. Using success-700 (`#067647`, 5.7:1) for text is the
+likely fix (`docs/STATUS.md`, bug #6).
+
+### D23 · Add the Lecture 8 chips, one chip first (2026-11-02 · User)
+"Look at the lecture 8 docs. Add the ICs from that doc." Asked which ICs and how to roll out, the
+user chose: the core MSI set (74138, 74139, 74147, 74148, 74151, 7485, 7442), plus the 74154
+(24-pin) and the 74157 (quad 2-to-1 mux, from the deck's Table 8-6). Not chosen: 7447, 74184,
+4051. Rollout: **generalize the engine and UI, build the 74138 end to end, show screenshots, then
+add the rest after review** (the same flow as the 7408).
+
+### D24 · MSI chips as "block" chips (2026-11-02 · Agent, awaiting user review)
+- **Model.** A `BlockChipDef` (`kind: 'block'`) is one function block: input and output pins in
+  function-table order, an `evaluate` function in `src/sim/msi.ts`, the datasheet's function-table
+  input patterns (outputs are computed), per-pin phrases, a status line, an output bus for the
+  timing diagram, and its own input patterns. Gate chips are unchanged. Shared pins (e.g. the
+  74157's select and enable) are why it's one block, not several units.
+- **Layout.** Pin diagram on the left (4fr), function table above timing on the right (8fr). The
+  focused-gate panel is dropped for block chips; the function table plus status line does its job.
+  This was the only arrangement found that keeps all timing rows visible at 1280×720.
+- **Pin names: the 74HC138 datasheet's** (A0–A2, E̅1 E̅2 E3, Y̅0–Y̅7), which are also the deck's.
+  TI's SN74LS138 uses A B C / G1 G2A G2B instead. Both are manufacturer datasheets, so D20 holds.
+  Active-LOW names are written `~E1` in data and drawn with an overbar.
+- **Function table columns: A2 A1 A0 (MSB first),** where the deck's table lists A0 A1 A2. Rows
+  then read as binary numbers, like every other table in the app. Values are 1/0/X rather than the
+  datasheet's H/L/X, matching the rest of the app (invariant 6).
+- **Timing outputs as one bus row** ("which Y̅ is LOW") instead of eight rows: eight output rows
+  don't fit at 720p.
+- **Input patterns for the 74138:** "Count 0–7" (enabled, address counts, two steps each) and
+  "Enable off" (same, with E3 LOW for steps 6–9), plus the shared Random and Clear.
+- **Nav:** a second section, "MSI functions", lists all nine chips; unbuilt ones show "soon".

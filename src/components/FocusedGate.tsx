@@ -1,5 +1,5 @@
 import { expression } from '../sim/logic';
-import type { Bit, ChipDef } from '../sim/types';
+import type { Bit, GateChipDef } from '../sim/types';
 import { GateBody, gateGeom } from './GateSymbol';
 import { noPointerFocus } from './noPointerFocus';
 
@@ -15,7 +15,7 @@ const LAMP_X = 396;
 const LAMP_R = 34;
 
 interface Props {
-  chip: ChipDef;
+  chip: GateChipDef;
   values: Record<number, Bit>;
   focus: number;
   onFocus: (gateIndex: number) => void;
@@ -41,7 +41,7 @@ export function FocusedGate({ chip, values, focus, onFocus, onTogglePin }: Props
     <section className="panel focused">
       <div className="panel-title row">
         <span>Focused gate</span>
-        <span className="gate-tabs" role="tablist" aria-label="Choose gate">
+        <span className="segmented gate-tabs" role="tablist" aria-label="Choose gate">
           {chip.gates.map((g, gi) => (
             <button
               key={g.id}

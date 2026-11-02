@@ -5,19 +5,34 @@ import { c7404 } from './c7404';
 import { c7408 } from './c7408';
 import { c7432 } from './c7432';
 import { c7486 } from './c7486';
+import { c74138 } from './c74138';
 
 export interface CatalogEntry {
   part: string;
+  /** Nav section heading. */
+  group: string;
   title: string;
   /** Undefined until the chip's data is written; listed in the nav as "coming soon". */
   chip?: ChipDef;
 }
 
+const GATES = 'Basic gates';
+const MSI = 'MSI functions';
+
 export const CATALOG: CatalogEntry[] = [
-  { part: '7400', title: 'Quad 2-input NAND', chip: c7400 },
-  { part: '7402', title: 'Quad 2-input NOR', chip: c7402 },
-  { part: '7404', title: 'Hex inverter', chip: c7404 },
-  { part: '7408', title: 'Quad 2-input AND', chip: c7408 },
-  { part: '7432', title: 'Quad 2-input OR', chip: c7432 },
-  { part: '7486', title: 'Quad 2-input XOR', chip: c7486 },
+  { group: GATES, part: '7400', title: 'Quad 2-input NAND', chip: c7400 },
+  { group: GATES, part: '7402', title: 'Quad 2-input NOR', chip: c7402 },
+  { group: GATES, part: '7404', title: 'Hex inverter', chip: c7404 },
+  { group: GATES, part: '7408', title: 'Quad 2-input AND', chip: c7408 },
+  { group: GATES, part: '7432', title: 'Quad 2-input OR', chip: c7432 },
+  { group: GATES, part: '7486', title: 'Quad 2-input XOR', chip: c7486 },
+  { group: MSI, part: '74138', title: '3-to-8 decoder', chip: c74138 },
+  { group: MSI, part: '74139', title: 'Dual 2-to-4 decoder' },
+  { group: MSI, part: '74154', title: '4-to-16 decoder' },
+  { group: MSI, part: '7442', title: 'BCD-to-decimal' },
+  { group: MSI, part: '74147', title: '10-to-4 priority encoder' },
+  { group: MSI, part: '74148', title: '8-to-3 priority encoder' },
+  { group: MSI, part: '74151', title: '8-to-1 multiplexer' },
+  { group: MSI, part: '74157', title: 'Quad 2-to-1 multiplexer' },
+  { group: MSI, part: '7485', title: '4-bit comparator' },
 ];

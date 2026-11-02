@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { describeGate, describePin } from '../sim/describe';
-import type { Bit, ChipDef, GateDef } from '../sim/types';
+import type { Bit, GateChipDef, GateDef } from '../sim/types';
 import { GateBody, gateGeom } from './GateSymbol';
+import { Icon } from './Icon';
 import { noPointerFocus } from './noPointerFocus';
 
 // Fixed drawing space; the SVG scales uniformly to fit its panel.
@@ -77,7 +78,7 @@ function layoutGate(gate: GateDef, count: number) {
 }
 
 interface Props {
-  chip: ChipDef;
+  chip: GateChipDef;
   values: Record<number, Bit>;
   focus: number;
   onFocus: (gateIndex: number) => void;
@@ -123,7 +124,7 @@ export function ChipView({ chip, values, focus, onFocus, onTogglePin }: Props) {
 
   return (
     <section className="panel chip-view">
-      <div className="panel-title">Chip view · pin diagram</div>
+      <div className="panel-title">Pin diagram</div>
       <div className="chip-svg-wrap">
         <svg viewBox={`0 0 ${W} ${H}`} className="chip-svg" role="group" aria-label={`${chip.part} pin diagram`}>
           {/* Package */}
@@ -218,6 +219,7 @@ export function ChipView({ chip, values, focus, onFocus, onTogglePin }: Props) {
         </svg>
       </div>
       <div className="inspector" aria-live="polite">
+        <Icon name="info" size={16} />
         {info ? (
           <p>
             <strong>{info.title}:</strong> {info.body}

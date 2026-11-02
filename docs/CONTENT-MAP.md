@@ -45,6 +45,34 @@ slides are image-only, so their content has to be viewed, not text-extracted.
 | Tri-state buffers | 70–75 | 74125 on 72; truth table titled "74129" on 73 (probably meant 74125); 74365 on 74–75 |
 | Summary | 76–83 | |
 
+## Lecture 8: Code Converters, Multiplexers and Demultiplexers (`Lecture8_ ELN133 Code Converters, Multiplexers and Demultiplexers.pptx`, 89 slides) · MSI source
+
+| Topic | Slides | Notes |
+|-------|--------|-------|
+| Objectives | 2–3 | |
+| Equality comparators (XNOR) | 4–9 | 6 = 2-bit equality logic diagram |
+| **7485** 4-bit magnitude comparator | 10–15 | 10 outputs A=B, A>B, A<B; 11 logic symbols; 12 cascading to 8 bits; 13–15 examples |
+| Decoding basics | 16–21 | 18 decoder kinds; 20 truth tables; 21 complete octal decoder (active-LOW outputs) |
+| **74138** 3-to-8 decoder | 22–24 | 23 = pin configuration, logic symbol, logic diagram, function table. **Slide error:** in the logic diagram (c), pin 10 is labeled 3̅; it's 5̅ (datasheet: pin 10 = Y̅5). The function table lists A0 A1 A2 (LSB first); the app shows A2 A1 A0 (D24) |
+| **7442** BCD-to-decimal | 25 | Pin configuration, logic symbol |
+| **74154** 4-to-16 decoder | 26–27 | 27 = 5-bit decoder from two 74HC154s |
+| 7-segment display; **74HC47** | 28–31, 54 | Not chosen for the app (D23) |
+| Encoding basics | 32–37 | 34 = 74HC147 figure; 35 keyboard encoder |
+| **74147** decimal-to-BCD priority encoder | 38–40 | 39 = logic symbol, function table; 40 example |
+| **74148** octal-to-binary priority encoder | 41–43 | 42 = logic symbol, function table; 43 example with E̅I |
+| Encoder vs decoder discussion | 44 | |
+| Code converters, **74184** BCD-to-binary | 45–53 | Not chosen (D23) |
+| Gray code | 55–62 | 62 = binary ↔ Gray with XOR gates |
+| Multiplexer basics | 63–67 | 67 = four-line mux logic diagram |
+| TTL/CMOS mux table (**74157**, 74153, 74151, 74150) | 68 | Table 8-6, image only |
+| **74151** 8-to-1 multiplexer | 69–74 | 69 symbol; 70 logic diagram; 71–74 mux as a logic-function generator |
+| Demultiplexer basics | 75–76 | |
+| **74139** dual 2-to-4 decoder/demux | 77–78 | 78 = routing to output 2a |
+| 74154 as a demultiplexer | 79 | |
+| 4051 analog mux/demux | 80–81, 84 | Not chosen (analog) |
+| Applications: 74138 address decoder, 74148 alarm encoder, multiplexed display | 82–86 | |
+| Summary | 87–89 | |
+
 ## Lecture 9: Flip-Flops and Registers (`Lecture 9_ Flip-Flops and Registers.pptx`, 96 slides) · future source
 
 | Topic | Slides | Notes |

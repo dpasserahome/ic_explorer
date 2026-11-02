@@ -48,6 +48,10 @@ npm run preview   # serve dist/
   Don't ask; follow the datasheet and note the slide error in `docs/CONTENT-MAP.md` (D20).
 - **Keep v1 simple.** Don't add electrical detail, propagation delay, or new features unless asked.
   Park ideas in `SPEC.md` → "Future ideas".
+- **Production-quality look, Untitled UI as the reference** (D22). The user wants the app to look
+  polished and professional, not like "something a software engineer would 'whip up'". It should
+  still be simple, educational and readable, with nothing added for decoration. New UI should
+  reuse the existing component styles (see Conventions) and look like it belongs in Untitled UI.
 
 ## Invariants: don't break these
 
@@ -80,12 +84,38 @@ CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 Save screenshots to the session scratchpad, not the repo. Only add one to `docs/img/` (dated)
 when it records a milestone.
 
+The CLI `--screenshot` can capture the timing diagram before its ResizeObserver re-renders. For
+reliable shots, interaction tests and measurements, drive Chrome over the DevTools protocol from
+a small Node script in the scratchpad. That's how sessions 2 and 3 tested; the scripts aren't in
+the repo.
+- Start Chrome with `--headless=new --remote-debugging-port=<port>` and a fresh `--user-data-dir`.
+  The nav's collapsed state is saved in `localStorage`, so a reused profile may start collapsed.
+- Get the page's WebSocket URL from `http://127.0.0.1:<port>/json`.
+- Node 20 has no global `WebSocket`: run the script with `node --experimental-websocket`.
+- Useful calls:
+  - `Emulation.setDeviceMetricsOverride` for sizes
+  - `Emulation.setEmulatedMedia` with `prefers-color-scheme: dark`
+  - `Input.dispatchMouseEvent` for hover and clicks
+  - `Runtime.evaluate` to measure `getBoundingClientRect()`
+  - `Page.captureScreenshot`
+- At 1280×720, check that all three timing rows are fully visible: measure them, don't eyeball.
+- Don't pass `--user-data-dir` to the CLI `--screenshot` recipe above: Chrome hung when we did.
+
 ## Conventions
 
 - TypeScript strict, React function components and hooks. No state library, no UI kit.
 - All diagrams are hand-built SVG. Styling is plain CSS in `src/styles.css`, with color tokens on
-  `:root` and a `prefers-color-scheme: dark` override. Use the tokens, not raw colors.
-- Signal colors: `--hi` (green) = 1/HIGH, `--lo` (gray) = 0/LOW, `--accent` (orange) =
+  `:root` and a `prefers-color-scheme: dark` override. Use the tokens, not raw colors. The token
+  table is in `docs/ARCHITECTURE.md` → "Styling".
+- Untitled UI is recreated in that CSS; no UI kit is installed. Reuse the shared classes:
+  - `button` (secondary by default)
+  - `.primary` (used once, for Play)
+  - `.icon-btn`, `.segmented` with `.on`, `.badge`, `kbd`, `.panel`, `.panel-title`
+
+  For icons, add to `src/components/Icon.tsx`, never Unicode glyphs. The font is Inter
+  (`@fontsource/inter`, bundled).
+- Signal colors: `--hi` (green) = 1/HIGH. `--lo` (gray) is for LOW wires and strokes only;
+  printed 0s use `--ink`, because gray digits read as "disabled". `--accent` (orange) =
   focus/cursor/selection only.
 - Code style: 2-space indent, single quotes, semicolons, trailing commas. Comments are sparse and
   explain *why*.
@@ -102,5 +132,10 @@ when it records a milestone.
 - `python-pptx` isn't installed. To read a deck, unzip the `.pptx` into the scratchpad and pull
   the `<a:t>` text from `ppt/slides/slideN.xml`. Images are in `ppt/media/`. In both decks the
   `slideN.xml` numbers match the presentation order.
-- `ChipView` geometry assumes a 14-pin DIP where each gate's pins are all on one side. See
-  `docs/ARCHITECTURE.md` before adding 16-pin chips.
+- Two chip families: gate chips (`ChipView`, 14-pin only) and MSI "block" chips (`BlockView`,
+  any pin count, `kind: 'block'`). See `docs/ARCHITECTURE.md` → "Block chips" before adding one.
+- Active-LOW names are written `~E1` in chip data and drawn with an overbar by `Barred.tsx`.
+- **1280×720 has no spare height.** Making the header, a panel title or the timing controls even
+  slightly taller clips the timing diagram's X row. It happened twice in session 3. Size changes
+  for short screens go in the compact-mode media query in `styles.css`.
+- `ChipHeader` splits `subtitle` on `' · '` into badges. Keep that format in chip data.

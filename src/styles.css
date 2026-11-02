@@ -1,37 +1,57 @@
+/* Palette and component metrics follow the Untitled UI system (gray scale, shadows, radii). */
 :root {
-  --bg: #f1f1ee;
+  --bg: #f9fafb;
   --panel: #ffffff;
-  --nav-bg: #e6e6e2;
-  --border: #d9d9d4;
-  --ink: #1c1c1e;
-  --muted: #6a6a70;
-  --hi: #2b8a3e;
-  --hi-soft: rgba(43, 138, 62, 0.14);
-  --lo: #a3a8ae;
-  --accent: #e8590c;
-  --accent-soft: rgba(232, 89, 12, 0.12);
-  --pin-bg: #f7f7f5;
-  --vcc: #c92a2a;
+  --nav-bg: #ffffff;
+  --track: #f2f4f7;
+  --hover: #f9fafb;
+  --border: #eaecf0;
+  --border-strong: #d0d5dd;
+  --ink: #101828;
+  --ink-2: #344054;
+  --muted: #475467;
+  --faint: #667085;
+  --wave: #101828;
+  --hi: #079455;
+  --hi-soft: rgba(7, 148, 85, 0.12);
+  --lo: #98a2b3;
+  --accent: #ef6820;
+  --accent-soft: rgba(239, 104, 32, 0.1);
+  --pin-bg: #f9fafb;
+  --vcc: #d92d20;
+  --on-ink: #ffffff;
+  --shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --shadow-sm: 0 1px 3px rgba(16, 24, 40, 0.1), 0 1px 2px rgba(16, 24, 40, 0.06);
   --gap: 12px;
-  --radius: 10px;
+  --radius: 12px;
+  --radius-sm: 8px;
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #131315;
-    --panel: #1d1d20;
-    --nav-bg: #18181a;
-    --border: #34343a;
-    --ink: #ececee;
-    --muted: #9b9ba3;
-    --hi: #51cf66;
-    --hi-soft: rgba(81, 207, 102, 0.16);
-    --lo: #6c7178;
-    --accent: #ff8a3d;
-    --accent-soft: rgba(255, 138, 61, 0.16);
-    --pin-bg: #2a2a2e;
-    --vcc: #ff6b6b;
+    --bg: #0c111d;
+    --panel: #161b26;
+    --nav-bg: #0c111d;
+    --track: #1f242f;
+    --hover: #1f242f;
+    --border: #1f242f;
+    --border-strong: #333741;
+    --ink: #f5f5f6;
+    --ink-2: #cecfd2;
+    --muted: #94969c;
+    --faint: #85888e;
+    --wave: #cecfd2;
+    --hi: #47cd89;
+    --hi-soft: rgba(71, 205, 137, 0.14);
+    --lo: #61646c;
+    --accent: #f38744;
+    --accent-soft: rgba(243, 135, 68, 0.14);
+    --pin-bg: #1f242f;
+    --vcc: #f97066;
+    --on-ink: #0c111d;
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
     color-scheme: dark;
   }
 }
@@ -50,37 +70,100 @@ body,
 body {
   background: var(--bg);
   color: var(--ink);
-  font: 15px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font: 15px/1.45 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
+/* Secondary button */
 button {
   font: inherit;
-  color: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-2);
   background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  padding: 4px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-xs);
+  padding: 6px 12px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background-color 0.12s, color 0.12s;
 }
 button:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--ink);
+}
+button.primary {
+  background: var(--ink);
   border-color: var(--ink);
+  color: var(--on-ink);
+}
+button.primary:hover:not(:disabled) {
+  background: var(--ink-2);
+  border-color: var(--ink-2);
+  color: var(--on-ink);
+}
+.icon-btn {
+  padding: 6px;
+}
+.icon {
+  flex: none;
 }
 
 .muted {
   color: var(--muted);
 }
 
+/* Active-LOW signal names (~E1 in chip data) */
+.bar {
+  text-decoration: overline;
+  text-decoration-thickness: 1.5px;
+}
+
 :focus-visible {
-  outline: 3px solid var(--accent);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+kbd {
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: var(--panel);
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 0 4px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+  color: var(--ink-2);
+  background: var(--track);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0 8px;
+  white-space: nowrap;
 }
 
 /* ---------- Layout ---------- */
 
 .app {
   display: grid;
-  grid-template-columns: 210px minmax(0, 1fr);
+  grid-template-columns: 200px minmax(0, 1fr);
   height: 100%;
+  transition: grid-template-columns 0.18s ease;
+}
+.app.nav-collapsed {
+  grid-template-columns: 68px minmax(0, 1fr);
 }
 
 .explorer {
@@ -107,11 +190,29 @@ button:hover:not(:disabled) {
   min-height: 0;
 }
 
+/* MSI chips: a tall pin diagram on the left, function table and timing on the right. */
+.explorer.block {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+.block-body {
+  display: grid;
+  grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+  gap: var(--gap);
+  min-height: 0;
+}
+.block-right {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: var(--gap);
+  min-height: 0;
+}
+
 .panel {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 10px 14px;
+  box-shadow: var(--shadow-xs);
+  padding: 12px 16px;
   min-height: 0;
   min-width: 0;
   display: flex;
@@ -119,12 +220,10 @@ button:hover:not(:disabled) {
 }
 
 .panel-title {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 4px;
 }
 .panel-title.row {
   display: flex;
@@ -137,97 +236,171 @@ button:hover:not(:disabled) {
 .sidenav {
   background: var(--nav-bg);
   border-right: 1px solid var(--border);
-  padding: 16px 10px;
+  padding: 14px 10px 10px;
+  overflow-x: hidden;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.nav-top {
+  padding: 0 4px 18px;
 }
 .brand {
-  font-weight: 800;
-  font-size: 18px;
-  padding: 0 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 16px;
+  white-space: nowrap;
+}
+.brand-mark {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: var(--ink);
+  color: var(--on-ink);
+  box-shadow: var(--shadow-xs);
+}
+.nav-section + .nav-section {
+  margin-top: 14px;
 }
 .nav-group {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
-  padding: 0 8px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--faint);
+  padding: 0 10px 6px;
+  white-space: nowrap;
 }
 .sidenav ul {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 4px;
+  gap: 2px;
 }
 .nav-item {
   width: 100%;
-  text-align: left;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0 8px;
-  border: 1px solid transparent;
+  justify-content: flex-start;
+  align-items: baseline;
+  gap: 8px;
+  border: none;
+  box-shadow: none;
   background: transparent;
-  padding: 8px;
+  border-radius: 6px;
+  padding: 8px 10px;
+  white-space: nowrap;
+}
+.nav-item:hover:not(:disabled) {
+  background: var(--hover);
 }
 .nav-item.on {
-  background: var(--panel);
-  border-color: var(--accent);
+  background: var(--track);
+}
+.nav-item.on .nav-part {
+  color: var(--ink);
 }
 .nav-item:disabled {
   cursor: default;
   opacity: 0.55;
 }
 .nav-part {
-  font-weight: 800;
-  grid-row: span 2;
-  align-self: center;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--ink-2);
 }
 .nav-title {
-  font-size: 12px;
-  color: var(--muted);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .nav-soon {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
+  font-size: 11px;
+  color: var(--faint);
+}
+.nav-toggle {
+  margin-top: auto;
+  justify-content: flex-start;
+  gap: 8px;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+  color: var(--faint);
+  padding: 8px 10px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Collapsed: a rail of part numbers. */
+.nav-collapsed .nav-top {
+  display: flex;
+  justify-content: center;
+  padding: 0 0 18px;
+}
+.nav-collapsed .brand-name,
+.nav-collapsed .nav-group,
+.nav-collapsed .nav-title,
+.nav-collapsed .nav-soon,
+.nav-collapsed .nav-toggle-label {
+  display: none;
+}
+.nav-collapsed .nav-item,
+.nav-collapsed .nav-toggle {
+  justify-content: center;
+  padding: 9px 2px;
 }
 
 /* ---------- Header ---------- */
 
+/* Min height so the panels below don't shift between chips with shorter overviews. */
 .chip-header {
   display: grid;
   grid-template-columns: auto auto auto minmax(0, 1fr);
   align-items: center;
-  gap: 24px;
+  gap: 20px;
   padding: 12px 18px;
+  min-height: 96px;
 }
 .part {
-  font-size: 44px;
-  font-weight: 800;
+  font-size: 40px;
+  font-weight: 600;
   line-height: 1;
   letter-spacing: -0.02em;
 }
 .title-block h1 {
-  font-size: 20px;
-  margin: 0 0 2px;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 6px;
+  white-space: nowrap;
 }
-.title-block .muted,
+.badges {
+  display: flex;
+  gap: 6px;
+}
+.equation-block {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 14px 7px;
+}
 .equation-block .muted {
   font-size: 13px;
 }
 .equation {
-  font-size: 30px;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.2;
   white-space: nowrap;
 }
 .overview {
   margin: 0;
   font-size: 14px;
+  line-height: 1.45;
   color: var(--muted);
-  border-left: 1px solid var(--border);
-  padding-left: 20px;
 }
 
 /* ---------- Shared SVG signal styles ---------- */
@@ -264,7 +437,14 @@ button:hover:not(:disabled) {
 /* ---------- Chip view ---------- */
 
 .chip-view {
-  gap: 8px;
+  position: relative;
+  gap: 4px;
+}
+/* The drawing is height-bound, so its top-left corner is empty: lay the title over it. */
+.chip-view > .panel-title {
+  position: absolute;
+  top: 12px;
+  left: 16px;
 }
 .chip-svg-wrap {
   flex: 1;
@@ -282,16 +462,16 @@ button:hover:not(:disabled) {
   stroke-width: 2.5;
 }
 .notch {
-  fill: var(--bg);
+  fill: var(--panel);
   stroke: var(--ink);
   stroke-width: 2.5;
 }
 .package-label {
-  font-size: 14px;
-  font-weight: 700;
-  fill: var(--muted);
+  font-size: 16px;
+  font-weight: 600;
+  fill: var(--faint);
   text-anchor: middle;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
 }
 .gate-group,
 .pin-group {
@@ -314,11 +494,21 @@ button:hover:not(:disabled) {
   pointer-events: none;
 }
 .gate-label {
-  font-size: 13px;
-  font-weight: 700;
-  fill: var(--muted);
+  font-size: 16px;
+  font-weight: 600;
+  fill: var(--faint);
   text-anchor: middle;
   pointer-events: none;
+}
+.block-label {
+  font-size: 18px;
+  font-weight: 600;
+  fill: var(--ink);
+  text-anchor: middle;
+  pointer-events: none;
+}
+.bubble {
+  stroke-width: 2;
 }
 .chip-svg path,
 .chip-svg .gate-body {
@@ -327,7 +517,7 @@ button:hover:not(:disabled) {
 
 .pin {
   fill: var(--pin-bg);
-  stroke: var(--ink);
+  stroke: var(--ink-2);
   stroke-width: 1.5;
 }
 .pin.hi {
@@ -358,21 +548,21 @@ button:hover:not(:disabled) {
   stroke-width: 3.5;
 }
 .pin-num {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 600;
   text-anchor: middle;
   fill: var(--ink);
   pointer-events: none;
 }
 .pin-name {
-  font-size: 12px;
-  font-weight: 600;
-  fill: var(--muted);
+  font-size: 16px;
+  font-weight: 500;
+  fill: var(--faint);
   pointer-events: none;
 }
 .pin-value {
-  font-size: 20px;
-  font-weight: 800;
+  font-size: 24px;
+  font-weight: 600;
   text-anchor: middle;
   pointer-events: none;
 }
@@ -380,27 +570,63 @@ button:hover:not(:disabled) {
   fill: var(--hi);
 }
 .pin-value.lo {
-  fill: var(--lo);
+  fill: var(--ink);
 }
 
 /* Fixed height: if hover text changed it, the chip SVG above would rescale under the pointer. */
 .inspector {
   flex: none;
-  height: calc(3 * 1.4em + 18px);
-  overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--pin-bg);
-  padding: 8px 12px;
-  font-size: 14px;
   display: flex;
-  align-items: center;
+  gap: 8px;
+  height: calc(3 * 1.4em + 9px);
+  overflow: hidden;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  font-size: 13.5px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+.inspector .icon {
+  margin-top: 1px;
+  color: var(--faint);
 }
 .inspector p {
   margin: 0;
 }
 .inspector strong {
-  color: var(--accent);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* ---------- Segmented controls (gate tabs, input patterns) ---------- */
+
+.segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 3px;
+  background: var(--track);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.segmented button {
+  border: 1px solid transparent;
+  box-shadow: none;
+  background: transparent;
+  color: var(--faint);
+  border-radius: 7px;
+  padding: 4px 10px;
+}
+.segmented button:hover:not(:disabled) {
+  background: transparent;
+  color: var(--ink);
+}
+.segmented button.on,
+.segmented button.on:hover {
+  background: var(--panel);
+  border-color: var(--border-strong);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
 }
 
 /* ---------- Focused gate ---------- */
@@ -418,23 +644,15 @@ button:hover:not(:disabled) {
 }
 /* Wrap rather than overflow: the 7404 has six tabs. */
 .gate-tabs {
-  display: flex;
-  flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 4px;
   min-width: 0;
 }
-.tab {
-  padding: 2px 10px;
+.segmented .tab {
   font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0;
-  text-transform: none;
+  padding: 1px 9px;
 }
-.tab.on {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-  color: var(--accent);
+.focused .panel-title {
+  margin-bottom: 0;
 }
 .switch {
   cursor: pointer;
@@ -447,9 +665,9 @@ button:hover:not(:disabled) {
   stroke-width: 4;
 }
 .switch-box {
-  fill: var(--pin-bg);
-  stroke: var(--lo);
-  stroke-width: 3;
+  fill: var(--panel);
+  stroke: var(--border-strong);
+  stroke-width: 2.5;
 }
 .switch-box.hi {
   fill: var(--hi-soft);
@@ -460,16 +678,16 @@ button:hover:not(:disabled) {
 }
 .switch-label {
   font-size: 30px;
-  font-weight: 800;
+  font-weight: 600;
   fill: var(--ink);
 }
 .switch-pin {
   font-size: 13px;
-  fill: var(--muted);
+  fill: var(--faint);
 }
 .switch-value {
   font-size: 38px;
-  font-weight: 800;
+  font-weight: 600;
   text-anchor: middle;
 }
 .switch-value.hi,
@@ -477,56 +695,53 @@ button:hover:not(:disabled) {
   fill: var(--hi);
 }
 .switch-value.lo {
-  fill: var(--lo);
+  fill: var(--ink);
 }
 .gate-kind {
   font-size: 18px;
-  font-weight: 800;
-  fill: var(--muted);
+  font-weight: 600;
+  fill: var(--faint);
   text-anchor: middle;
 }
 .lamp {
-  stroke-width: 4;
+  stroke-width: 3;
   transition: fill 0.15s;
 }
 .lamp.hi {
   fill: var(--hi);
   stroke: var(--hi);
-  filter: drop-shadow(0 0 10px var(--hi));
+  filter: drop-shadow(0 0 8px var(--hi));
 }
 .lamp.lo {
-  fill: var(--pin-bg);
-  stroke: var(--lo);
+  fill: var(--panel);
+  stroke: var(--border-strong);
 }
 .lamp-value {
   font-size: 34px;
-  font-weight: 800;
+  font-weight: 600;
   text-anchor: middle;
 }
 .lamp-value.hi {
   fill: var(--panel);
 }
 .lamp-value.lo {
-  fill: var(--lo);
+  fill: var(--ink);
 }
 .lamp-label {
   font-size: 26px;
-  font-weight: 800;
+  font-weight: 600;
   text-anchor: middle;
   fill: var(--ink);
 }
 .live-equation {
   text-align: center;
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 22px;
+  font-weight: 600;
   padding-top: 4px;
   white-space: nowrap;
 }
 .eq-out.hi {
   color: var(--hi);
-}
-.eq-out.lo {
-  color: var(--lo);
 }
 
 /* ---------- Truth table ---------- */
@@ -535,12 +750,12 @@ button:hover:not(:disabled) {
   overflow: auto;
 }
 .truth-table {
+  font-variant-numeric: tabular-nums;
   border-collapse: collapse;
   margin: auto;
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.25;
-  font-variant-numeric: tabular-nums;
 }
 .truth-table th,
 .truth-table td {
@@ -549,30 +764,63 @@ button:hover:not(:disabled) {
   padding: 2px 0;
 }
 .truth-table th {
-  font-size: 18px;
-  border-bottom: 2px solid var(--ink);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink);
+  border-bottom: 2px solid var(--ink-2);
+}
+.truth-table td {
+  border-bottom: 1px solid var(--border);
+}
+.truth-table tbody tr:last-child td {
+  border-bottom: none;
 }
 .truth-table .out-col {
-  border-left: 2px solid var(--ink);
+  border-left: 2px solid var(--ink-2);
 }
 .truth-table td.out-col.hi {
   color: var(--hi);
-}
-.truth-table td.out-col.lo {
-  color: var(--lo);
+  font-weight: 700;
 }
 .truth-table tbody tr {
   cursor: pointer;
 }
 .truth-table tbody tr:hover {
-  background: var(--accent-soft);
+  background: var(--hover);
 }
 .truth-table tbody tr.on {
-  background: var(--accent);
-  color: #fff;
+  background: var(--accent-soft);
 }
-.truth-table tbody tr.on td.out-col {
-  color: #fff;
+.truth-table tbody tr.on td:first-child {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/* Function table (MSI chips): more columns, so narrower cells and smaller type */
+.function-table {
+  font-size: 16px;
+}
+.function-table th,
+.function-table td {
+  width: 38px;
+}
+.function-table th {
+  font-size: 14px;
+}
+.function-table td.hi {
+  color: var(--hi);
+  font-weight: 700;
+}
+.function-table td.dc {
+  color: var(--faint);
+}
+.status-line {
+  text-align: center;
+  font-size: 16px;
+  font-weight: 600;
+  padding-top: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ---------- Timing diagram ---------- */
@@ -583,31 +831,32 @@ button:hover:not(:disabled) {
   overflow: hidden;
 }
 .timing-svg {
+  font-variant-numeric: tabular-nums;
   display: block;
   user-select: none;
   touch-action: none;
   cursor: ew-resize;
 }
-.cursor-band {
-  fill: var(--accent-soft);
+.cursor-line {
+  stroke: var(--accent);
+  stroke-width: 2;
 }
 .cursor-head {
   fill: var(--accent);
 }
 .ruler-num {
   font-size: 12px;
+  font-weight: 500;
   text-anchor: middle;
-  fill: var(--muted);
+  fill: var(--faint);
 }
 .ruler-num.on {
   fill: #fff;
-  font-weight: 800;
+  font-weight: 600;
 }
 .ruler-caption {
-  font-size: 11px;
-  fill: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-size: 12px;
+  fill: var(--faint);
 }
 .grid-line {
   stroke: var(--border);
@@ -618,23 +867,44 @@ button:hover:not(:disabled) {
 }
 .row-label {
   font-size: 22px;
-  font-weight: 800;
+  font-weight: 600;
   fill: var(--ink);
+}
+.row-label.small {
+  font-size: 18px;
 }
 .row-pin {
   font-size: 11px;
-  fill: var(--muted);
+  fill: var(--faint);
+}
+.bus {
+  fill: none;
+  stroke: var(--wave);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.bus-text,
+.bus-value {
+  font-size: 13px;
+  font-weight: 600;
+  fill: var(--ink);
+  text-anchor: middle;
+  pointer-events: none;
+}
+.bus-value {
+  font-size: 15px;
 }
 .row-value {
   font-size: 24px;
-  font-weight: 800;
+  font-weight: 600;
   text-anchor: middle;
 }
 .row-value.hi {
   fill: var(--hi);
 }
 .row-value.lo {
-  fill: var(--lo);
+  fill: var(--ink);
 }
 .high-fill {
   fill: var(--hi-soft);
@@ -642,7 +912,7 @@ button:hover:not(:disabled) {
 }
 .wave {
   fill: none;
-  stroke: var(--ink);
+  stroke: var(--wave);
   stroke-width: 2.5;
   stroke-linejoin: round;
   pointer-events: none;
@@ -673,30 +943,50 @@ button:hover:not(:disabled) {
 .btn-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 .btn-row .play {
-  min-width: 84px;
-  font-weight: 700;
+  min-width: 92px;
 }
 .step-readout {
-  margin-left: 6px;
   font-variant-numeric: tabular-nums;
+  margin-left: 4px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.step-readout strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.control-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
 }
 .hint {
   font-size: 12px;
+  font-weight: 400;
+  color: var(--faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 /* ---------- Narrow screens: stack ---------- */
 
 @media (max-width: 900px) {
-  .app {
+  .app,
+  .app.nav-collapsed {
     grid-template-columns: 1fr;
     height: auto;
   }
   .sidenav {
     border-right: none;
     border-bottom: 1px solid var(--border);
+  }
+  .nav-toggle {
+    display: none;
   }
   .sidenav ul {
     grid-template-columns: repeat(3, 1fr);
@@ -705,8 +995,15 @@ button:hover:not(:disabled) {
     height: auto;
     grid-template-rows: auto auto 300px;
   }
-  .middle {
+  .middle,
+  .block-body {
     grid-template-columns: 1fr;
+  }
+  .explorer.block {
+    grid-template-rows: auto auto;
+  }
+  .block-right {
+    grid-template-rows: auto 320px;
   }
   .chip-view {
     height: 460px;
@@ -719,8 +1016,6 @@ button:hover:not(:disabled) {
   }
   .overview {
     grid-column: 1 / -1;
-    border-left: none;
-    padding-left: 0;
   }
 }
 
@@ -732,13 +1027,14 @@ button:hover:not(:disabled) {
   }
   .chip-header {
     padding: 8px 16px;
-    gap: 20px;
+    gap: 18px;
+    min-height: 84px;
   }
   .part {
-    font-size: 36px;
+    font-size: 34px;
   }
   .equation {
-    font-size: 26px;
+    font-size: 22px;
   }
   .overview {
     font-size: 13px;
@@ -751,7 +1047,41 @@ button:hover:not(:disabled) {
   .truth-table th {
     font-size: 15px;
   }
+  .function-table {
+    font-size: 15px;
+    line-height: 1.05;
+  }
+  .function-table th {
+    font-size: 13px;
+  }
+  .status-line {
+    font-size: 15px;
+    padding-top: 3px;
+  }
   .panel {
-    padding: 8px 12px;
+    padding: 8px 14px;
+  }
+  .panel-title {
+    margin-bottom: 2px;
+  }
+  .chip-view > .panel-title {
+    top: 8px;
+    left: 14px;
+  }
+  button {
+    line-height: 18px;
+    padding: 4px 10px;
+  }
+  .icon-btn {
+    padding: 4px;
+  }
+  .segmented {
+    padding: 2px;
+  }
+  .segmented button {
+    padding: 2px 9px;
+  }
+  .timing-controls {
+    padding-top: 4px;
   }
 }

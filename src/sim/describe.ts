@@ -1,5 +1,5 @@
 import { expression, levelName } from './logic';
-import type { Bit, ChipDef } from './types';
+import type { Bit, BlockChipDef, GateChipDef } from './types';
 
 /** "pin 1" or "pins 1 and 2". */
 const pinsPhrase = (pins: number[]) => (pins.length === 1 ? `pin ${pins[0]}` : `pins ${pins.join(' and ')}`);
@@ -10,7 +10,7 @@ export interface Description {
 }
 
 /** Plain-language explanation of a pin: what it is, its value, and where its signal goes. */
-export function describePin(chip: ChipDef, pin: number, values: Record<number, Bit>): Description {
+export function describePin(chip: GateChipDef, pin: number, values: Record<number, Bit>): Description {
   const def = chip.pins.find((p) => p.num === pin)!;
   const title = `Pin ${pin} · ${def.name}`;
   const v = (p: number) => values[p] ?? 0;
@@ -53,10 +53,22 @@ export function describePin(chip: ChipDef, pin: number, values: Record<number, B
   };
 }
 
-export function describeGate(chip: ChipDef, gateIndex: number): Description {
+export function describeGate(chip: GateChipDef, gateIndex: number): Description {
   const gate = chip.gates[gateIndex];
   return {
     title: `Gate ${gate.id} · ${gate.kind}`,
     body: `${gate.inputs.length === 1 ? 'Input' : 'Inputs'} on ${pinsPhrase(gate.inputs)}, output on pin ${gate.output}. Click to focus this gate.`,
   };
+}
+
+/** Pin explanation for a block chip: what the pin does (from the chip data) and its value now. */
+export function describeBlockPin(chip: BlockChipDef, pin: number, values: Record<number, Bit>): Description {
+  const def = chip.pins.find((p) => p.num === pin)!;
+  const title = `Pin ${pin} · ${def.name}`;
+  const v = values[pin] ?? 0;
+  if (def.role === 'vcc') return { title, body: 'Power supply (+5 V) for the whole chip.' };
+  if (def.role === 'gnd') return { title, body: 'Ground (0 V), the common return path for the whole chip.' };
+  const now = `Currently ${v} (${levelName(v)}).`;
+  if (def.role === 'input') return { title, body: `${chip.pinInfo[pin]} ${now} Click to toggle.` };
+  return { title, body: `${chip.pinInfo[pin]} ${now} Driven by the chip, so change the inputs instead.` };
 }
