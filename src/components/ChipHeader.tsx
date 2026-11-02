@@ -24,9 +24,13 @@ export function ChipHeader({ chip }: { chip: ChipDef }) {
       </div>
       <div className="equation-block">
         <div className="equation">{formula}</div>
-        <div className="muted">“{chip.readAs}”</div>
+        <div className="muted">
+          “<Barred text={chip.readAs} />”
+        </div>
       </div>
-      <p className="overview">{chip.overview}</p>
+      <p className="overview">
+        <Barred text={chip.overview} />
+      </p>
     </header>
   );
 }

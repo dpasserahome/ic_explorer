@@ -14,7 +14,7 @@ export interface GateGeom {
 /** Distinctive-shape (ANSI) gate outline in a local box of height h, pointing right, origin top-left. */
 export function gateGeom(kind: GateKind, h: number): GateGeom {
   const r = h * 0.09;
-  const inverted = kind === 'NAND' || kind === 'NOR' || kind === 'NOT';
+  const inverted = kind === 'NAND' || kind === 'NOR' || kind === 'XNOR' || kind === 'NOT';
   let body: string;
   let width: number;
   let extra: string | undefined;
@@ -31,7 +31,7 @@ export function gateGeom(kind: GateKind, h: number): GateGeom {
     body = `M0,0 Q${h * 0.3},${h / 2} 0,${h} Q${h * 0.75},${h} ${width},${h / 2} Q${h * 0.75},0 0,0 Z`;
     // Back curve is a quadratic bulging to 0.15h; wires end on it.
     inputX = (y) => 0.6 * h * (y / h) * (1 - y / h);
-    if (kind === 'XOR') {
+    if (kind === 'XOR' || kind === 'XNOR') {
       const o = -h * 0.18;
       extra = `M${o},0 Q${o + h * 0.3},${h / 2} ${o},${h}`;
       inputX = (y) => o + 0.6 * h * (y / h) * (1 - y / h);

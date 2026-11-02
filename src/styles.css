@@ -14,6 +14,9 @@
   --wave: #101828;
   --hi: #079455;
   --hi-soft: rgba(7, 148, 85, 0.12);
+  --hi-soft-hover: rgba(7, 148, 85, 0.2);
+  /* Edge and ledge of clickable input pins */
+  --pin-edge: #d0d5dd;
   --lo: #98a2b3;
   --accent: #ef6820;
   --accent-soft: rgba(239, 104, 32, 0.1);
@@ -44,6 +47,8 @@
     --wave: #cecfd2;
     --hi: #47cd89;
     --hi-soft: rgba(71, 205, 137, 0.14);
+    --hi-soft-hover: rgba(71, 205, 137, 0.24);
+    --pin-edge: #61646c;
     --lo: #61646c;
     --accent: #f38744;
     --accent-soft: rgba(243, 135, 68, 0.14);
@@ -202,7 +207,8 @@ kbd {
 }
 .block-right {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  /* Fixed split, so long function tables (74154, 7442) scroll instead of squeezing the timing. */
+  grid-template-rows: minmax(0, 55fr) minmax(0, 45fr);
   gap: var(--gap);
   min-height: 0;
 }
@@ -402,6 +408,12 @@ kbd {
   line-height: 1.45;
   color: var(--muted);
 }
+/* A real overline sits at the ascender and, at this line height, reads as underlining the line
+   above; draw the bar just over the capitals instead. */
+.overview .bar {
+  text-decoration: none;
+  background: linear-gradient(currentColor, currentColor) 0 0.1em / 100% 1.5px no-repeat;
+}
 
 /* ---------- Shared SVG signal styles ---------- */
 
@@ -449,6 +461,8 @@ kbd {
 .chip-svg-wrap {
   flex: 1;
   min-height: 0;
+  /* Clear of the title when a tall package (the 74154's 24 pins) fills the height */
+  padding-top: 22px;
   display: flex;
   justify-content: center;
 }
@@ -538,7 +552,35 @@ kbd {
   stroke-width: 3.5;
 }
 .pin-group {
+  cursor: default;
+}
+/* Inputs read as controls (Untitled UI: raised, with a hover state); outputs as flat read-outs. */
+.pin-group.input,
+.block .pin-group.output {
   cursor: pointer;
+}
+.pin-group.input .pin {
+  fill: var(--panel);
+  stroke: var(--pin-edge);
+  filter: drop-shadow(0 2px 0 var(--pin-edge));
+}
+.pin-group.input .pin.hi {
+  fill: var(--hi-soft);
+  stroke: var(--hi);
+  filter: drop-shadow(0 2px 0 var(--hi));
+}
+.pin-group.input:hover .pin:not(.selected) {
+  stroke: var(--ink-2);
+}
+.pin-group.input:hover .pin.hi:not(.selected) {
+  stroke: var(--hi);
+  fill: var(--hi-soft-hover);
+}
+/* Selection and keyboard focus still win over the input styles above. */
+.pin-group.input .pin.selected,
+.pin-group.input:focus-visible .pin {
+  stroke: var(--accent);
+  stroke-width: 3.5;
 }
 .pin-group:focus-visible {
   outline: none;
@@ -795,6 +837,125 @@ kbd {
   box-shadow: inset 3px 0 0 var(--accent);
 }
 
+/* Block chips' right-hand panel: Logic and Function table tabs share one grid cell, so the
+   panel keeps the table's height whichever tab is showing. */
+.tab-stack {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+}
+.tab-pane {
+  grid-area: 1 / 1;
+  min-width: 0;
+  min-height: 0;
+}
+.table-pane {
+  display: flex;
+  flex-direction: column;
+}
+.table-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.title-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+.view-tabs {
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+}
+/* Suffix-only output tabs (the 74154's 0–15) */
+.segmented.narrow button {
+  min-width: 26px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+.tab-pane.hidden {
+  visibility: hidden;
+}
+/* The logic drawing takes no height of its own: it fills whatever the table sets. */
+.logic-pane {
+  position: relative;
+}
+.logic-view {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+.logic-svg {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+.logic-kind {
+  font-size: 13px;
+  font-weight: 600;
+  fill: var(--faint);
+  text-anchor: middle;
+}
+.logic-label {
+  font-size: 18px;
+  font-weight: 600;
+  fill: var(--ink);
+}
+.switch-box.collapsed {
+  stroke-dasharray: 5 4;
+}
+.logic-box-label {
+  font-size: 14px;
+  font-weight: 600;
+  fill: var(--ink);
+}
+.logic-switch-label {
+  font-size: 18px;
+  font-weight: 600;
+  fill: var(--ink);
+}
+.logic-switch-value {
+  font-size: 22px;
+  font-weight: 600;
+  text-anchor: middle;
+}
+.logic-switch-value.hi,
+.logic-lamp-value.hi {
+  fill: var(--hi);
+}
+.logic-switch-value.lo {
+  fill: var(--ink);
+}
+.logic-lamp-value {
+  font-size: 26px;
+  font-weight: 600;
+  text-anchor: middle;
+}
+.logic-lamp-value.hi {
+  fill: var(--panel);
+}
+.logic-lamp-value.lo {
+  fill: var(--ink);
+}
+.logic-lamp-label {
+  font-size: 20px;
+  font-weight: 600;
+  text-anchor: middle;
+  fill: var(--ink);
+}
+.logic-equations {
+  flex: none;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
 /* Function table (MSI chips): more columns, so narrower cells and smaller type */
 .function-table {
   font-size: 16px;
@@ -812,6 +973,32 @@ kbd {
 }
 .function-table td.dc {
   color: var(--faint);
+}
+/* Conditions (7485: "A3>B3") and outputs that follow an input (74151: "I5") */
+.function-table td.cond,
+.function-table td.sym {
+  width: auto;
+  padding: 2px 6px;
+  font-size: 0.85em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.function-table.dense th,
+.function-table.dense td {
+  width: 29px;
+  font-size: 13px;
+}
+/* Two-digit names (Y10–Y15) need a little room between them */
+.function-table.dense th {
+  font-size: 12px;
+  letter-spacing: -0.03em;
+}
+.function-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+  /* Room for overbars, which would otherwise be clipped by the scroll box */
+  padding-top: 5px;
 }
 .status-line {
   text-align: center;
@@ -1083,5 +1270,10 @@ kbd {
   }
   .timing-controls {
     padding-top: 4px;
+  }
+  /* MSI pages' timing panel is narrower; without this the "Edited" badge wraps the controls and
+     clips the timing rows. The ruler's cursor pill already shows the step. */
+  .explorer.block .step-readout {
+    display: none;
   }
 }

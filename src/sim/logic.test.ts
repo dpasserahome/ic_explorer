@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { CATALOG } from '../chips';
 import { c7408 } from '../chips/c7408';
 import { c74138 } from '../chips/c74138';
-import { evalGate, evaluateChip, expression, functionTable, truthTable } from './logic';
-import { decoder138, toBits } from './msi';
-import type { Bit, GateChipDef } from './types';
+import { evalGate, evalLogic, evaluateChip, expression, functionTable, logicExpression, toBits, truthTable } from './logic';
+import { binaryValue } from './msi';
+import type { Bit, BlockChipDef, GateChipDef } from './types';
 
 describe('evalGate', () => {
   const rows = (kind: Parameters<typeof evalGate>[0]) =>
@@ -40,6 +40,7 @@ describe('expression', () => {
     expect(expression('OR', ['A', 'B'])).toBe('A + B');
     expect(expression('NOR', ['A', 'B'])).toBe('(A + B)′');
     expect(expression('XOR', ['A', 'B'])).toBe('A ⊕ B');
+    expect(expression('XNOR', ['A', 'B'])).toBe('(A ⊕ B)′');
   });
 });
 
@@ -102,53 +103,151 @@ describe('catalog', () => {
   });
 });
 
-describe('74138', () => {
-  it('matches the 74HC138 datasheet connection diagram', () => {
-    expect(Object.fromEntries(c74138.pins.map((p) => [p.num, p.name]))).toEqual({
-      1: 'A0', 2: 'A1', 3: 'A2', 4: '~E1', 5: '~E2', 6: 'E3', 7: '~Y7', 8: 'GND',
-      9: '~Y6', 10: '~Y5', 11: '~Y4', 12: '~Y3', 13: '~Y2', 14: '~Y1', 15: '~Y0', 16: 'VCC',
+// ---------- MSI (block) chips ----------
+
+const block = (part: string) => CATALOG.find((c) => c.part === part)!.chip as BlockChipDef;
+const MSI = CATALOG.filter((c) => c.chip?.kind === 'block').map((c) => c.part);
+
+// Datasheet connection diagrams (NXP 74HC series names, which the deck uses; "~" = overbar).
+const range = (from: number, names: string[]) => Object.fromEntries(names.map((n, i) => [from + i, n]));
+const MSI_PINOUTS: Record<string, Record<number, string>> = {
+  '74138': { ...range(1, ['A0', 'A1', 'A2', '~E1', '~E2', 'E3', '~Y7', 'GND']), ...range(9, ['~Y6', '~Y5', '~Y4', '~Y3', '~Y2', '~Y1', '~Y0', 'VCC']) },
+  '74139': { ...range(1, ['1~E', '1A0', '1A1', '1~Y0', '1~Y1', '1~Y2', '1~Y3', 'GND']), ...range(9, ['2~Y3', '2~Y2', '2~Y1', '2~Y0', '2A1', '2A0', '2~E', 'VCC']) },
+  '74154': {
+    ...range(1, ['~Y0', '~Y1', '~Y2', '~Y3', '~Y4', '~Y5', '~Y6', '~Y7', '~Y8', '~Y9', '~Y10', 'GND']),
+    ...range(13, ['~Y11', '~Y12', '~Y13', '~Y14', '~Y15', '~E0', '~E1', 'A3', 'A2', 'A1', 'A0', 'VCC']),
+  },
+  '7442': { ...range(1, ['~Y0', '~Y1', '~Y2', '~Y3', '~Y4', '~Y5', '~Y6', 'GND']), ...range(9, ['~Y7', '~Y8', '~Y9', 'A3', 'A2', 'A1', 'A0', 'VCC']) },
+  '74147': { ...range(1, ['~I4', '~I5', '~I6', '~I7', '~I8', '~A2', '~A1', 'GND']), ...range(9, ['~A0', '~I9', '~I1', '~I2', '~I3', '~A3', 'NC', 'VCC']) },
+  '74148': { ...range(1, ['~I4', '~I5', '~I6', '~I7', '~EI', '~A2', '~A1', 'GND']), ...range(9, ['~A0', '~I0', '~I1', '~I2', '~I3', '~GS', '~EO', 'VCC']) },
+  '74151': { ...range(1, ['I3', 'I2', 'I1', 'I0', 'Y', '~Y', '~E', 'GND']), ...range(9, ['S2', 'S1', 'S0', 'I7', 'I6', 'I5', 'I4', 'VCC']) },
+  '74157': { ...range(1, ['S', '1I0', '1I1', '1Y', '2I0', '2I1', '2Y', 'GND']), ...range(9, ['3Y', '3I1', '3I0', '4Y', '4I1', '4I0', '~E', 'VCC']) },
+  '7485': { ...range(1, ['B3', 'IA<B', 'IA=B', 'IA>B', 'A>B', 'A=B', 'A<B', 'GND']), ...range(9, ['B0', 'A0', 'B1', 'A1', 'A2', 'B2', 'A3', 'VCC']) },
+};
+
+/** Each unit's outputs for its input bits, from an independent formula (not the chip's evaluate). */
+const REFERENCE: Record<string, (bits: Bit[]) => Bit[]> = {
+  '74138': ([e1, e2, e3, ...a]) => Array.from({ length: 8 }, (_, k) => (!e1 && !e2 && e3 && k === binaryValue(a) ? 0 : 1)),
+  '74139': ([e, ...a]) => Array.from({ length: 4 }, (_, k) => (!e && k === binaryValue(a) ? 0 : 1)),
+  '74154': ([e0, e1, ...a]) => Array.from({ length: 16 }, (_, k) => (!e0 && !e1 && k === binaryValue(a) ? 0 : 1)),
+  '7442': (a) => Array.from({ length: 10 }, (_, k) => (k === binaryValue(a) ? 0 : 1)),
+  '74147': (ins) => {
+    const n = Math.max(0, ...ins.map((b, i) => (b === 0 ? i + 1 : 0)));
+    return toBits(15 - n, 4);
+  },
+  '74148': ([ei, ...ins]) => {
+    if (ei) return [1, 1, 1, 1, 1];
+    const n = Math.max(-1, ...ins.map((b, i) => (b === 0 ? i : -1)));
+    if (n < 0) return [1, 1, 1, 1, 0];
+    const [a2, a1, a0] = toBits(7 - n, 3);
+    return [0, a0, a1, a2, 1];
+  },
+  '74151': ([e, s2, s1, s0, ...d]) => {
+    const y: Bit = e ? 0 : d[s2 * 4 + s1 * 2 + s0];
+    return [y, (1 - y) as Bit];
+  },
+  '74157': ([e, s, i0, i1]) => [e ? 0 : s ? i1 : i0],
+  '7485': (ins) => {
+    const a = binaryValue(ins.slice(0, 4));
+    const b = binaryValue(ins.slice(4, 8));
+    const [gt, lt, eq] = ins.slice(8);
+    if (a !== b) return a > b ? [1, 0, 0] : [0, 0, 1];
+    // The datasheet's cascading rows: X X H → =; H L L → >; L H L → <; H H L → none; L L L → > and <.
+    if (eq) return [0, 1, 0];
+    return [lt ? 0 : 1, 0, gt ? 0 : 1];
+  },
+};
+
+// Function-table output cells as printed on the datasheets (or deck), row by row.
+const TABLE_OUTPUTS: Record<string, string[][]> = {
+  '74138': [
+    '11111111', '11111111', '11111111', '01111111', '10111111', '11011111', '11101111', '11110111', '11111011', '11111101', '11111110',
+  ].map((r) => [...r]),
+  '74147': ['1111', '0110', '0111', '1000', '1001', '1010', '1011', '1100', '1101', '1110'].map((r) => [...r]),
+  '74148': ['11111', '11110', '00001', '01001', '00101', '01101', '00011', '01011', '00111', '01111'].map((r) => [...r]),
+  '74151': [['0', '1'], ...Array.from({ length: 8 }, (_, n) => [`I${n}`, `I${n}′`])],
+  '74157': [['0'], ['1I0'], ['1I1']],
+  '7485': [...Array.from({ length: 4 }, () => [['1', '0', '0'], ['0', '0', '1']]).flat(), ['1', '0', '0'], ['0', '0', '1'], ['0', '1', '0'], ['0', '0', '0'], ['1', '0', '1']],
+};
+
+it('lists every MSI chip as built', () => {
+  expect(MSI).toEqual(['74138', '74139', '74154', '7442', '74147', '74148', '74151', '74157', '7485']);
+});
+
+describe.each(MSI)('%s', (part) => {
+  const chip = block(part);
+  const name = (p: number) => chip.pins.find((x) => x.num === p)!.name;
+  const signal = chip.pins.filter((p) => p.role === 'input' || p.role === 'output').map((p) => p.num);
+
+  it('matches the datasheet connection diagram', () => {
+    expect(Object.fromEntries(chip.pins.map((p) => [p.num, p.name]))).toEqual(MSI_PINOUTS[part]);
+  });
+
+  it('wires every signal pin to a unit, inputs as inputs and outputs as outputs', () => {
+    const role = (p: number) => chip.pins.find((x) => x.num === p)!.role;
+    for (const u of chip.units) {
+      expect(u.inputs.every((p) => role(p) === 'input')).toBe(true);
+      expect(u.outputs.every((p) => role(p) === 'output')).toBe(true);
+    }
+    const used = new Set(chip.units.flatMap((u) => [...u.inputs, ...u.outputs]));
+    expect(signal.every((p) => used.has(p))).toBe(true);
+    expect(signal.every((p) => chip.pinInfo[p])).toBe(true);
+  });
+
+  chip.units.forEach((unit, u) => {
+    const n = unit.inputs.length;
+    const combos = Array.from({ length: 1 << n }, (_, c) => toBits(c, n));
+    const valuesFor = (bits: Bit[]) => evaluateChip(chip, Object.fromEntries(unit.inputs.map((p, i) => [p, bits[i]])));
+
+    it(`${unit.label}: matches an independent formula for all ${1 << n} input combinations`, () => {
+      for (const bits of combos) {
+        const values = valuesFor(bits);
+        expect(unit.outputs.map((p) => values[p])).toEqual(REFERENCE[part](bits));
+      }
+    });
+
+    it(`${unit.label}: function table rows are all determined and clickable`, () => {
+      const rows = functionTable(chip, u);
+      for (const row of rows) {
+        expect(row.outputs).not.toContain('?');
+        expect(combos.some((bits) => row.def.match(bits))).toBe(true);
+        for (const bits of combos.filter((_, c) => c % 7 === 0)) expect(row.def.match(row.def.apply(bits))).toBe(true);
+      }
+    });
+
+    it(`${unit.label}: every Logic view matches the chip`, () => {
+      for (const view of chip.logic(u)) {
+        for (const bits of combos) expect(evalLogic(view.node, valuesFor(bits))).toBe(valuesFor(bits)[view.out]);
+      }
+    });
+
+    it(`${unit.label}: presets and timing rows fit the unit`, () => {
+      for (const p of chip.presets) for (let s = 0; s < 16; s++) expect(p.at(s)).toHaveLength(n);
+      const { inputs, outputs } = chip.timing(u);
+      expect(inputs.length + outputs.length).toBeLessThanOrEqual(7);
+      for (const row of [...inputs, ...outputs]) {
+        expect(row.pins.every((p) => signal.includes(p))).toBe(true);
+        if (row.pins.length > 1) expect(row.format).toBeDefined();
+      }
     });
   });
 
-  it('lists inputs and outputs by name in function-table order', () => {
+  if (TABLE_OUTPUTS[part]) {
+    it('reproduces the datasheet function table outputs', () => {
+      expect(functionTable(chip, 0).map((r) => r.outputs)).toEqual(TABLE_OUTPUTS[part]);
+    });
+  }
+
+  it('names outputs and inputs consistently in the Logic tab', () => {
+    for (let u = 0; u < chip.units.length; u++) for (const v of chip.logic(u)) expect(name(v.out)).toBeDefined();
+  });
+});
+
+describe('74138 Logic view', () => {
+  it('writes the logic path in lecture notation', () => {
     const name = (p: number) => c74138.pins.find((x) => x.num === p)!.name;
-    expect(c74138.inputs.map(name)).toEqual(['~E1', '~E2', 'E3', 'A2', 'A1', 'A0']);
-    expect(c74138.outputs.map(name)).toEqual(['~Y0', '~Y1', '~Y2', '~Y3', '~Y4', '~Y5', '~Y6', '~Y7']);
-  });
-
-  it('reproduces the datasheet function table', () => {
-    const rows = functionTable(c74138).map((r) => r.outputs.join(''));
-    expect(rows).toEqual([
-      '11111111', '11111111', '11111111',
-      '01111111', '10111111', '11011111', '11101111',
-      '11110111', '11111011', '11111101', '11111110',
-    ]);
-  });
-
-  it('gives the same outputs whatever the X inputs are', () => {
-    for (const row of c74138.functionRows) {
-      const want = functionTable({ ...c74138, functionRows: [row] })[0].outputs;
-      for (let n = 0; n < 64; n++) {
-        const bits = toBits(n, 6);
-        if (row.every((b, i) => b === 'X' || b === bits[i])) expect(decoder138(bits)).toEqual(want);
-      }
-    }
-  });
-
-  it('drives exactly the addressed output LOW when enabled, and none otherwise', () => {
-    for (let n = 0; n < 64; n++) {
-      const [e1, e2, e3, a2, a1, a0] = toBits(n, 6);
-      const values = evaluateChip(c74138, Object.fromEntries(c74138.inputs.map((p, i) => [p, toBits(n, 6)[i]])));
-      const outs = c74138.outputs.map((p) => values[p]);
-      const enabled = e1 === 0 && e2 === 0 && e3 === 1;
-      const want = Array.from({ length: 8 }, (_, k): Bit => (enabled && k === a2 * 4 + a1 * 2 + a0 ? 0 : 1));
-      expect(outs).toEqual(want);
-    }
-  });
-
-  it('has presets that set every input', () => {
-    for (const p of c74138.presets) {
-      for (let s = 0; s < 16; s++) expect(p.at(s)).toHaveLength(c74138.inputs.length);
-    }
+    const y5 = c74138.logic(0)[5].node;
+    expect(logicExpression(y5, name)).toBe('(E · A2 · A1′ · A0)′');
+    expect('inputs' in y5 && logicExpression(y5.inputs[0], name)).toBe('~E1′ · ~E2′ · E3');
   });
 });

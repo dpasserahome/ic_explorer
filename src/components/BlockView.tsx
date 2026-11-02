@@ -3,6 +3,7 @@ import { describeBlockPin } from '../sim/describe';
 import type { Bit, BlockChipDef } from '../sim/types';
 import { Barred, BarredSvg, plainText } from './Barred';
 import { Icon } from './Icon';
+import { pinRadius } from './pinShape';
 import { noPointerFocus } from './noPointerFocus';
 
 // Fixed drawing width; the height follows the pin count. The SVG scales uniformly to fit its panel.
@@ -23,10 +24,14 @@ interface Props {
   chip: BlockChipDef;
   values: Record<number, Bit>;
   onTogglePin: (pin: number) => void;
+  /** The pin whose logic the Logic tab shows (outlined). */
+  focusedPin: number;
+  /** Any signal pin was clicked (after an input pin is toggled). */
+  onPinClick: (pin: number) => void;
 }
 
 /** Pin diagram for an MSI chip: the package with one function block wired to every signal pin. */
-export function BlockView({ chip, values, onTogglePin }: Props) {
+export function BlockView({ chip, values, onTogglePin, focusedPin, onPinClick }: Props) {
   const [hoverPin, setHoverPin] = useState<number | null>(null);
   const [selectedPin, setSelectedPin] = useState<number | null>(null);
 
@@ -48,6 +53,7 @@ export function BlockView({ chip, values, onTogglePin }: Props) {
 
   const clickPin = (p: number, role: string) => {
     if (role === 'input') onTogglePin(p);
+    if (role === 'input' || role === 'output') onPinClick(p);
     setSelectedPin(p);
   };
 
@@ -89,18 +95,25 @@ export function BlockView({ chip, values, onTogglePin }: Props) {
           {chip.pins.map((pin) => {
             const left = side(pin.num) === 'L';
             const y = pinY(pin.num);
-            const isPower = pin.role === 'vcc' || pin.role === 'gnd';
+            // Power and not-connected pins carry no logic value.
+            const isPower = pin.role === 'vcc' || pin.role === 'gnd' || pin.role === 'nc';
             const boxX = left ? PKG_L - PIN_W : PKG_R;
             const valueX = left ? PKG_L - PIN_W - 22 : PKG_R + PIN_W + 22;
             const nameX = left ? PKG_L + 8 : PKG_R - 8;
             const state = isPower ? pin.role : lv(pin.num);
-            const classes = ['pin', state, pin.role === 'input' ? 'clickable' : '', inspectorPin === pin.num ? 'selected' : '']
+            const focused = pin.num === focusedPin;
+            const classes = [
+              'pin',
+              state,
+              pin.role === 'input' ? 'clickable' : '',
+              inspectorPin === pin.num || focused ? 'selected' : '',
+            ]
               .filter(Boolean)
               .join(' ');
             return (
               <g
                 key={pin.num}
-                className="pin-group"
+                className={`pin-group ${pin.role}`}
                 onMouseEnter={() => setHoverPin(pin.num)}
                 onMouseLeave={() => setHoverPin(null)}
                 onMouseDown={noPointerFocus}
@@ -117,7 +130,7 @@ export function BlockView({ chip, values, onTogglePin }: Props) {
                 onFocus={() => setHoverPin(pin.num)}
                 onBlur={() => setHoverPin(null)}
               >
-                <rect x={boxX} y={y - PIN_H / 2} width={PIN_W} height={PIN_H} rx={3} className={classes} />
+                <rect x={boxX} y={y - PIN_H / 2} width={PIN_W} height={PIN_H} rx={pinRadius(pin.role, PIN_H)} className={classes} />
                 <text x={boxX + PIN_W / 2} y={y + 5} className="pin-num">
                   {pin.num}
                 </text>
@@ -144,7 +157,10 @@ export function BlockView({ chip, values, onTogglePin }: Props) {
             <Barred text={info.body} />
           </p>
         ) : (
-          <p className="muted">Hover or click a pin to see what it does. Click an input pin to toggle it.</p>
+          <p className="muted">
+            Square pins are inputs: click one to toggle it. Round pins are outputs, driven by the chip: click one
+            to see its logic.
+          </p>
         )}
       </div>
     </section>

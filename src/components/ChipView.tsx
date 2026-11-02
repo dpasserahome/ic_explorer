@@ -3,6 +3,7 @@ import { describeGate, describePin } from '../sim/describe';
 import type { Bit, GateChipDef, GateDef } from '../sim/types';
 import { GateBody, gateGeom } from './GateSymbol';
 import { Icon } from './Icon';
+import { pinRadius } from './pinShape';
 import { noPointerFocus } from './noPointerFocus';
 
 // Fixed drawing space; the SVG scales uniformly to fit its panel.
@@ -179,7 +180,7 @@ export function ChipView({ chip, values, focus, onFocus, onTogglePin }: Props) {
             return (
               <g
                 key={pin.num}
-                className={gi >= 0 && dim(gi) ? 'pin-group dim' : 'pin-group'}
+                className={`pin-group ${pin.role}${gi >= 0 && dim(gi) ? ' dim' : ''}`}
                 onMouseEnter={() => setHoverPin(pin.num)}
                 onMouseLeave={() => setHoverPin(null)}
                 onMouseDown={noPointerFocus}
@@ -196,7 +197,7 @@ export function ChipView({ chip, values, focus, onFocus, onTogglePin }: Props) {
                 onFocus={() => setHoverPin(pin.num)}
                 onBlur={() => setHoverPin(null)}
               >
-                <rect x={boxX} y={y - PIN_H / 2} width={PIN_W} height={PIN_H} rx={3} className={classes} />
+                <rect x={boxX} y={y - PIN_H / 2} width={PIN_W} height={PIN_H} rx={pinRadius(pin.role, PIN_H)} className={classes} />
                 <text x={boxX + PIN_W / 2} y={y + 5} className="pin-num">
                   {pin.num}
                 </text>
@@ -226,7 +227,8 @@ export function ChipView({ chip, values, focus, onFocus, onTogglePin }: Props) {
           </p>
         ) : (
           <p className="muted">
-            Hover or click a pin to trace its signal. Click an input pin to toggle it. Click a gate to focus it.
+            Square pins are inputs: click one to toggle it. Round pins are outputs, driven by the gates. Hover a pin
+            to trace its signal; click a gate to focus it.
           </p>
         )}
       </div>

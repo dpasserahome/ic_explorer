@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { useElementSize } from '../hooks/useElementSize';
-import { evaluateUnit } from '../sim/logic';
-import type { Bit, ChipDef } from '../sim/types';
+import { evaluateChip, evaluateUnit } from '../sim/logic';
+import type { Bit, ChipDef, TimingRowDef } from '../sim/types';
 import { chipPresets, STEPS, type Explorer } from '../state/useExplorer';
 import { BarredSvg } from './Barred';
 import { Icon } from './Icon';
@@ -10,6 +10,12 @@ const LABEL_W = 120;
 const RULER_H = 24;
 const PAD_R = 10;
 const BUS_SLANT = 5;
+/** Rough width of one character of bus text, to hide text in runs too narrow for it. */
+const BUS_CHAR_W = 7.5;
+/** Rough character widths of the label column's small text and its bus value. */
+const SUB_CHAR_W = 7;
+const VALUE_CHAR_W = 10;
+const VALUE_X = LABEL_W - 22;
 
 /** A waveform row (bits) or, for a block chip's outputs, a bus row labelled per step (texts). */
 type Row = {
@@ -39,41 +45,56 @@ export function TimingDiagram({ chip, ex }: { chip: ChipDef; ex: Explorer }) {
   // input row, it's a click and flips that input instead.
   const press = useRef<{ step: number; input: number | null; moved: boolean } | null>(null);
 
-  const unitWaves = ex.waves[ex.focus];
-  const outSteps = Array.from({ length: STEPS }, (_, s) =>
-    evaluateUnit(chip, ex.focus, unitWaves.map((row) => row[s])),
-  );
   const pinName = (p: number) => chip.pins.find((x) => x.num === p)!.name;
   const block = chip.kind === 'block';
+  let rows: Row[];
 
-  const rows: Row[] =
-    chip.kind === 'block'
-      ? [
-          ...chip.inputs.map((pin, i) => ({ label: pinName(pin), sub: `pin ${pin}`, bits: unitWaves[i], input: i })),
-          {
-            label: chip.outputBus.label,
-            sub: chip.outputBus.sub,
-            texts: outSteps.map(chip.outputBus.format),
-            input: -1,
-          },
-        ]
-      : [
-          ...chip.gates[ex.focus].inputs.map((pin, i) => ({
-            label: chip.inputLabels[i],
-            sub: `pin ${pin} · ${pinName(pin)}`,
-            bits: unitWaves[i],
-            input: i,
-          })),
-          {
-            label: chip.outputLabel,
-            sub: `pin ${chip.gates[ex.focus].output} · ${pinName(chip.gates[ex.focus].output)}`,
-            bits: outSteps.map((o) => o[0]),
-            input: -1,
-          },
-        ];
-  // Block rows carry pin names like ~E1, so their pin numbers sit further right.
-  const subX = block ? 50 : 36;
-  const title = block ? 'Timing diagram' : `Timing diagram: gate ${chip.gates[ex.focus].id}`;
+  if (chip.kind === 'block') {
+    // Every pin's value at every step, so rows can show any pins, inputs or outputs, as bits or a bus.
+    const stepValues = Array.from({ length: STEPS }, (_, s) => {
+      const ins: Record<number, Bit> = {};
+      for (const [p, w] of Object.entries(ex.pinWaves)) ins[Number(p)] = w[s];
+      return evaluateChip(chip, ins);
+    });
+    const unitInputs = chip.units[ex.focus].inputs;
+    const toRow = (def: TimingRowDef, isInput: boolean): Row => {
+      const series = stepValues.map((v) => def.pins.map((p): Bit => v[p] ?? 0));
+      if (def.pins.length === 1 && !def.format) {
+        const input = isInput ? unitInputs.indexOf(def.pins[0]) : -1;
+        return { label: def.label, sub: def.sub, bits: series.map((b) => b[0]), input };
+      }
+      return { label: def.label, sub: def.sub, texts: series.map(def.format!), input: -1 };
+    };
+    const { inputs, outputs } = chip.timing(ex.focus);
+    rows = [...inputs.map((d) => toRow(d, true)), ...outputs.map((d) => toRow(d, false))];
+  } else {
+    const gate = chip.gates[ex.focus];
+    const unitWaves = ex.waves[ex.focus];
+    const outBits = Array.from({ length: STEPS }, (_, s) => evaluateUnit(chip, ex.focus, unitWaves.map((row) => row[s]))[0]);
+    rows = [
+      ...gate.inputs.map((pin, i) => ({
+        label: chip.inputLabels[i],
+        sub: `pin ${pin} · ${pinName(pin)}`,
+        bits: unitWaves[i],
+        input: i,
+      })),
+      { label: chip.outputLabel, sub: `pin ${gate.output} · ${pinName(gate.output)}`, bits: outBits, input: -1 },
+    ];
+  }
+  // Block rows carry names like ~E1 or IA>B, so their small text starts after the longest name.
+  const longest = Math.max(...rows.map((r) => r.label.replace(/~/g, '').length));
+  const subX = block ? Math.min(74, 20 + longest * 10.5) : 36;
+  // The bus row already prints its value at the cursor, so the label column shows it only where
+  // it fits beside the small text (not beside the 7485's "A3–A0").
+  const fitsValue = (row: Row) => {
+    const len = row.texts![ex.cursor].replace(/~/g, '').length;
+    return subX + row.sub.length * SUB_CHAR_W + 6 <= VALUE_X - (len * VALUE_CHAR_W) / 2 && len <= 4;
+  };
+  const title = !block
+    ? `Timing diagram: gate ${chip.gates[ex.focus].id}`
+    : chip.units.length > 1
+      ? `Timing diagram: ${chip.units[ex.focus].label.toLowerCase()}`
+      : 'Timing diagram';
 
   const tracksW = Math.max(100, width - LABEL_W - PAD_R);
   const slotW = tracksW / STEPS;
@@ -205,9 +226,11 @@ export function TimingDiagram({ chip, ex }: { chip: ChipDef; ex: Explorer }) {
 
                   {row.texts && (
                     <>
-                      <text x={LABEL_W - 22} y={yMid + 5} className="bus-value">
-                        <BarredSvg text={row.texts[ex.cursor]} />
-                      </text>
+                      {fitsValue(row) && (
+                        <text x={VALUE_X} y={yMid + 5} className="bus-value">
+                          <BarredSvg text={row.texts[ex.cursor]} />
+                        </text>
+                      )}
                       {runs(row.texts).map((run) => {
                         const x0 = xAt(run.start);
                         const x1 = xAt(run.end);
@@ -218,9 +241,11 @@ export function TimingDiagram({ chip, ex }: { chip: ChipDef; ex: Explorer }) {
                               d={`M${x0},${yMid} L${x0 + k},${yHi} H${x1 - k} L${x1},${yMid} L${x1 - k},${yLo} H${x0 + k} Z`}
                               className="bus"
                             />
-                            <text x={(x0 + x1) / 2} y={yMid + 4.5} className="bus-text">
-                              <BarredSvg text={run.text} />
-                            </text>
+                            {run.text.replace(/~/g, '').length * BUS_CHAR_W + 8 <= x1 - x0 && (
+                              <text x={(x0 + x1) / 2} y={yMid + 4.5} className="bus-text">
+                                <BarredSvg text={run.text} />
+                              </text>
+                            )}
                           </g>
                         );
                       })}

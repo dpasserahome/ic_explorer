@@ -4,20 +4,22 @@ _Last updated 2026-11-02 (end of session 4)._
 
 ## Where we are
 
-**Phase:** Lecture 8 MSI chips (D23). All six basic-gate chips are built, and the UI has the
-Untitled UI restyle (D22). **The first MSI chip, the 74138 3-to-8 decoder, is built end to end
-and waiting for the user's review** before the other eight are added.
+**Phase:** Lecture 8 MSI chips (D23). **All nine chosen MSI chips are built** (74138, 74139,
+74154, 7442, 74147, 74148, 74151, 74157, 7485) along with the six basic-gate chips, and they're
+**waiting for the user's review** (D26).
 
-**Last thing that happened:** the user asked to add the ICs from Lecture 8. They chose the core
-MSI set plus the 74154 and 74157, rolled out one chip first (D23). The agent generalized the engine
-and UI to "block" chips (D24) and built the 74138. Screenshots:
-`docs/img/2026-11-02-74138-first-pass-1280x720.png` and `…-dark-1280x720.png`.
+**Last thing that happened:** the user reviewed the 74138 Logic tab (D25) only in passing (a
+question about pin 7, which is the output Y̅7) and then said "Please continue with the rest of
+the chips in this section." The agent generalized the block-chip model and built the other eight
+(D26): units, per-pin waveforms, chip-defined function tables and timing rows, collapsed logic
+boxes, XNOR and NC pins. Screenshots: `docs/img/2026-11-02-7485-logic-1280x720.png` and
+`…-74157-logic-1280x720.png`.
 
-**Committed and pushed** as `ae80f0f` (session 3's restyle plus session 4's MSI work).
+**Committed and pushed:** `ae80f0f` (session 3's restyle plus the 74138), then the Logic tab
+(D25), the other eight chips (D26) and the pin styles (D27) in the commit after `a5047dc`.
 
 **Start the next session by:**
-1. getting the user's review of the 74138 page (layout, function table, bus row, wording);
-2. then building the remaining Lecture 8 chips (Next steps).
+1. getting the user's review of the MSI pages (see Open questions).
 
 ## Done
 
@@ -54,6 +56,15 @@ and UI to "block" chips (D24) and built the 74138. Screenshots:
       `FunctionTable`, timing bus rows, overbar names (`Barred`), nav sections.
 - [x] **74138** end to end: datasheet pinout (74HC138 names), function table, status line,
       presets "Count 0–7" and "Enable off". 7 new tests.
+- [x] **Logic tab (D25)** for MSI chips: the selected output's gate path, live, with equations;
+      gate trees in chip data, checked against `evaluate` (2 new tests, 33 total).
+- [x] **Input vs. output pins (D27):** inputs are raised squares with a hover state, outputs flat
+      round pills, on every chip; the inspector hint explains it. Checked on all 15 chips at
+      1280×720 (and the MSI chips at 1440×810 and dark): nothing moved, inspector text fits.
+- [x] **The other eight Lecture 8 chips (D26):** 74139, 74154, 7442, 74147, 74148, 74151,
+      74157, 7485. Model generalized: units (with shared pins), per-pin waveforms, function tables
+      with computed symbolic outputs ("I5", "I5′"), chip-defined timing rows and buses, Logic
+      views per output with collapsed boxes, XNOR, NC pins. 112 tests.
 
 ## Verification so far
 
@@ -61,6 +72,8 @@ Session 3 checks were done after the D22 restyle unless noted.
 
 | Check | Result |
 |-------|--------|
+| Session 4, all nine MSI chips (D26) | `npm test`: 112 pass. For every MSI chip: datasheet pinout, unit wiring, an independent reference formula over every input combination, function-table rows (no unnamed cell, every row clickable), every Logic view against `evaluate`, presets, at most 7 timing rows; datasheet/deck table outputs for 74138, 74147, 74148, 74151, 74157, 7485. `npm run build` passes. Measured over DevTools for **all nine chips at 1280×720 light, 1440×810 light and 1280×720 dark**: no page scroll, header ≤ 88 px, timing SVG 183 px in 187 (225 in 229 at 1440×810), controls on one line, title rows don't overflow, tables don't scroll sideways, no console errors. Driven: 74139 clicking 2Y̅0 switches to decoder 2 and its view, 1A0 back to decoder 1, unit tabs; 74157 toggling shared S keeps the unit and shows "Edited", clicking 4Y switches to mux 4; 74151 clicking I5's pin opens the I5 view; 74154 stepping to 14 scrolls the table's current row into view, output tab 13 → Y̅13. 7408 and 7404 re-checked after the shared header change: unchanged. |
+| Session 4, Logic tab | 33 tests pass, build passes. 1280×720: timing SVG 184 px in a 188 px area (7 rows ≈ 23 px), also with the "Edited" badge showing (it used to wrap the controls and clip the rows; fixed by hiding the step readout on compact MSI pages). Driven: Function table tab → click output pin 10 → Logic tab with Y̅5; toggling A2 and A0 switches drives Y̅5 LOW and updates both equations; the Y̅7 tab. 1440×810 and dark mode checked. |
 | Session 4 (74138) | `npm test`: 31 pass (adds 74138 pinout, function table vs datasheet, X really don't-care, exhaustive 64-combination check, presets; catalog). `npm run build` passes. Measured over DevTools: **1280×720** header 88 px, timing SVG 191 px in a 195 px area (7 rows ≈ 24 px), controls on one line, no page scroll, package 188×363 px, pin names ≈11.6 px; **1440×810** fits with room to spare; dark mode checked. Interactions driven: pin click toggles (E3 → "Disabled" status, row 3 highlighted, "Edited" badge), table row click sets inputs (address 5 → Y̅5 LOW), → steps, "Enable off" preset, hovering an output pin explains it. 7408 page checked after the refactor: unchanged. **1024×768 fails** for the 74138 (see Known gaps). |
 | `npm test` (session 3) | 24 tests pass: truth tables for all kinds, notation, and for each of the six chips its datasheet pinout, gate-to-pin wiring and per-gate evaluation; catalog |
 | `npm run build` | passes (type-check + bundle; Inter's `.woff2` files are bundled into `dist/assets/`) |
@@ -75,18 +88,26 @@ scratchpads, not the repo. `CLAUDE.md` → "Verifying UI changes" explains how t
 
 ## Next steps (proposed order)
 
-1. **User review of the 74138 page** (D24 is the agent's design).
-2. **The other Lecture 8 chips**, simplest first: 74139 (two decoders; probably two units or a
-   shared block), 7442 (1-of-10), 74154 (24-pin; check the taller package fits), 74147 and 74148
-   (priority encoders; the 74148 has EI/EO/GS), 74157 (shared select/enable), 74151 (12 inputs) and
-   7485 (11 inputs). The last two need **input buses** in the timing diagram (e.g. D7–D0 as one
-   row), since one row per input won't fit.
-3. Contrast fixes (bug #6), content review (D19), 1024×768 (bug #7), IEEE/IEC toggle, hosting:
+1. **User review of the MSI pages** (D24–D26 details are the agent's design; see Open questions).
+2. Contrast fixes (bug #6), content review (D19), 1024×768 (bug #7), IEEE/IEC toggle, hosting:
    unchanged from session 3.
+3. Lecture 9 (sequential chips) needs the engine changes in `docs/ARCHITECTURE.md` →
+   "Extending to sequential chips".
 
 ## Open questions for the user
 
-- **74138 page (D24):** is the layout right? In particular: no focused-gate panel for MSI chips;
+- **MSI pages (D26), agent's choices to confirm:**
+  - Input patterns per chip (e.g. 74147 "One key at a time" / "Priority" with Ī3 held).
+  - Timing buses: the 74151's data inputs as one 8-bit word "I 7…0", the 7485's A and B as
+    numbers, the encoders' inputs as "which Ī is LOW" and their outputs as the code n.
+  - Collapsed boxes in the Logic tab: the 7485's A>B / A<B views show "GT: A > B" and
+    "EQ: A = B" as boxes; the 74151 shows one data term plus "rest: other 7".
+  - Names: 74147 outputs A̅0–A̅3 (deck) rather than TI's A–D; 7485 A>B etc. (deck/TI) rather
+    than NXP's QA>B.
+  - The 74148's G̅S view and the 74147's A̅0 view are dense (9 inputs, 4 AND terms); readable at
+    1280×720 but small.
+- **Logic tab default:** it opens on Logic, not Function table. Which should be first?
+- **74138 page (D24)** (the pattern for all nine): is the layout right? In particular:
   outputs as one bus row in the timing diagram; function-table columns A2 A1 A0 (the deck lists
   A0 A1 A2); 1/0/X instead of H/L/X; 74HC138 pin names (the deck's) rather than TI's A B C / G1
   G2A G2B.
@@ -113,7 +134,10 @@ scratchpads, not the repo. `CLAUDE.md` → "Verifying UI changes" explains how t
 - **74138 at 1024×768:** the header grows to 246 px (four header columns squeeze the overview)
   and the timing diagram is clipped. Depends on the 4:3 question (bug #7).
 - **Nav at 720p is full:** 15 entries fill the side nav exactly at 1280×720. More chips will make
-  it scroll; unbuilt entries truncate their titles ("8-to-3 priority enco…").
+  it scroll. Long titles truncate ("10-to-4 priority enco…").
+- **Dense Logic views:** the 74148's G̅S (an 8-input NAND inside) and the 74147's A̅0 (four AND
+  terms) scale down to fit; their switch labels are small from the back of a room.
+- **MSI chips at 1024×768** weren't checked this session (the 74138 failed there before; bug #7).
 - The block chip view has no signal tracing (there's one block, so nothing to dim).
 
 - `ChipView` (gate chips) is fixed for 14-pin DIPs where each gate's pins are all on one side.
@@ -184,4 +208,13 @@ Chrome hang in session 3.
 - **2026-11-02 (session 4).** The user asked to start the server and add the ICs from Lecture 8.
   The deck was read and mapped. The user chose the chips and a one-chip-first rollout (D23). The
   agent added block-chip support (D24) and built the 74138, verified with tests, measurements
-  and scripted interactions at 1280×720, 1440×810 and in dark mode. Committed and pushed (`ae80f0f`).
+  and scripted interactions at 1280×720, 1440×810 and in dark mode. Committed and pushed
+  (`ae80f0f`). The user then said the chip was a black box; the agent added the Logic tab (D25).
+  Asked to continue with the rest of the section, the agent built the other eight chips (D26),
+  then fixed what screenshots showed: 74147/74148 headers and pattern labels too long for 720p,
+  wires sharing a vertical and a wire running through an inverter in the Logic tab, the 74154's
+  16 tabs wrapping and its 24-pin package under the panel title, overbars clipped in table
+  headers and drawn too high in the overview, the 7485's long names colliding. Verified at
+  1280×720, 1440×810 and dark mode. The user then mistook the 7485's pin 7 (an output) for a
+  stuck input, so output pins were made visually distinct (D27). Committed and pushed at the
+  user's request.

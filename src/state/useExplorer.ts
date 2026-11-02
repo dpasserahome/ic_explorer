@@ -51,11 +51,22 @@ function presetWaves(chip: ChipDef, preset: Preset, nInputs: number, offset = 0)
   );
 }
 
+/** Pin → waveform. */
+type PinWaves = Record<number, Bit[]>;
+
+/** Writes a unit's per-input waveforms onto its pins. */
+const withUnitWaves = (w: PinWaves, pins: number[], unitWaves: GateWaves): PinWaves => {
+  const next = { ...w };
+  pins.forEach((p, i) => (next[p] = unitWaves[i]));
+  return next;
+};
+
 /**
- * Single source of truth for the explorer: every gate's input waveforms plus a time cursor.
- * Pin values at any moment are the waveforms read at the cursor, so the pinout, focused gate,
- * truth table and timing diagram can never disagree. Toggling an input anywhere edits the
- * waveform at the current step.
+ * Single source of truth for the explorer: every input pin's waveform plus a time cursor. Pin
+ * values at any moment are the waveforms read at the cursor, so the pinout, focused gate, tables
+ * and timing diagram can never disagree. Toggling an input anywhere edits the waveform at the
+ * current step. Waveforms are kept per pin (not per unit) because block-chip units can share pins
+ * (the 74157's S and ~E).
  */
 export function useExplorer(chip: ChipDef) {
   const units = useMemo(() => chipUnits(chip), [chip]);
@@ -63,61 +74,74 @@ export function useExplorer(chip: ChipDef) {
   const [focus, setFocus] = useState(0);
   const [cursor, setCursorRaw] = useState(0);
   const [playing, setPlaying] = useState(false);
-  const [waves, setWaves] = useState<GateWaves[]>(() =>
-    units.map((u, gi) => presetWaves(chip, initialPreset, u.inputs.length, gi)),
+  const [pinWaves, setPinWaves] = useState<PinWaves>(() =>
+    units.reduce<PinWaves>(
+      (w, u, gi) => withUnitWaves(w, u.inputs, presetWaves(chip, initialPreset, u.inputs.length, gi)),
+      {},
+    ),
   );
   // Which input pattern each unit is showing; null once the learner has edited its waveforms.
   const [patterns, setPatterns] = useState<(Preset | null)[]>(() => units.map(() => initialPreset));
+  // Editing a pin edits every unit that uses it.
   const markEdited = useCallback(
-    (gi: number) => setPatterns((p) => p.map((x, g) => (g === gi ? null : x))),
-    [],
+    (pin: number) => setPatterns((p) => p.map((x, g) => (units[g].inputs.includes(pin) ? null : x))),
+    [units],
   );
 
   const setCursor = useCallback((s: number) => setCursorRaw(((s % STEPS) + STEPS) % STEPS), []);
   const step = useCallback((d: number) => setCursorRaw((c) => (((c + d) % STEPS) + STEPS) % STEPS), []);
 
+  /** waves[unit][input][step], read from the pin waveforms. */
+  const waves = useMemo(() => units.map((u) => u.inputs.map((p) => pinWaves[p])), [units, pinWaves]);
+
   const inputs = useMemo(() => {
     const m: Record<number, Bit> = {};
-    units.forEach((u, gi) => u.inputs.forEach((p, i) => (m[p] = waves[gi][i][cursor])));
+    for (const [p, w] of Object.entries(pinWaves)) m[Number(p)] = w[cursor];
     return m;
-  }, [units, waves, cursor]);
+  }, [pinWaves, cursor]);
 
   const values = useMemo(() => evaluateChip(chip, inputs), [chip, inputs]);
 
-  const flip = useCallback((gi: number, ii: number, s: number) => {
-    markEdited(gi);
-    setWaves((w) =>
-      w.map((gw, g) =>
-        g !== gi ? gw : gw.map((row, i) => (i !== ii ? row : row.map((b, k) => (k === s ? ((1 - b) as Bit) : b)))),
-      ),
-    );
-  }, [markEdited]);
+  const flipPin = useCallback(
+    (pin: number, s: number) => {
+      markEdited(pin);
+      setPinWaves((w) => ({ ...w, [pin]: w[pin].map((b, k) => (k === s ? ((1 - b) as Bit) : b)) }));
+    },
+    [markEdited],
+  );
+
+  const flip = useCallback((gi: number, ii: number, s: number) => flipPin(units[gi].inputs[ii], s), [units, flipPin]);
 
   const togglePin = useCallback(
     (pin: number) => {
-      const gi = units.findIndex((u) => u.inputs.includes(pin));
-      if (gi < 0) return;
-      flip(gi, units[gi].inputs.indexOf(pin), cursor);
+      if (pin in pinWaves) flipPin(pin, cursor);
     },
-    [units, cursor, flip],
+    [pinWaves, cursor, flipPin],
   );
 
   const setGateInputs = useCallback(
     (gi: number, bits: Bit[]) => {
-      if (bits.some((b, i) => waves[gi][i][cursor] !== b)) markEdited(gi);
-      setWaves((w) =>
-        w.map((gw, g) => (g !== gi ? gw : gw.map((row, i) => row.map((b, k) => (k === cursor ? bits[i] : b))))),
-      );
+      const pins = units[gi].inputs;
+      pins.forEach((p, i) => pinWaves[p][cursor] !== bits[i] && markEdited(p));
+      setPinWaves((w) => {
+        const next = { ...w };
+        pins.forEach((p, i) => (next[p] = w[p].map((b, k) => (k === cursor ? bits[i] : b))));
+        return next;
+      });
     },
-    [cursor, waves, markEdited],
+    [units, cursor, pinWaves, markEdited],
   );
 
   const applyPreset = useCallback(
     (p: Preset) => {
-      setPatterns((ps) => ps.map((x, g) => (g === focus ? p : x)));
-      setWaves((w) => w.map((gw, g) => (g === focus ? presetWaves(chip, p, gw.length) : gw)));
+      const pins = units[focus].inputs;
+      // A preset on one unit also moves pins it shares, so other units sharing them show as edited.
+      setPatterns((ps) =>
+        ps.map((x, g) => (g === focus ? p : units[g].inputs.some((q) => pins.includes(q)) ? null : x)),
+      );
+      setPinWaves((w) => withUnitWaves(w, pins, presetWaves(chip, p, pins.length)));
     },
-    [chip, focus],
+    [chip, units, focus],
   );
 
   useEffect(() => {
@@ -135,6 +159,7 @@ export function useExplorer(chip: ChipDef) {
     playing,
     setPlaying,
     waves,
+    pinWaves,
     pattern: patterns[focus],
     values,
     flip,

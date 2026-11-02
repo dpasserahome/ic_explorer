@@ -55,16 +55,16 @@ slides are image-only, so their content has to be viewed, not text-extracted.
 | Decoding basics | 16–21 | 18 decoder kinds; 20 truth tables; 21 complete octal decoder (active-LOW outputs) |
 | **74138** 3-to-8 decoder | 22–24 | 23 = pin configuration, logic symbol, logic diagram, function table. **Slide error:** in the logic diagram (c), pin 10 is labeled 3̅; it's 5̅ (datasheet: pin 10 = Y̅5). The function table lists A0 A1 A2 (LSB first); the app shows A2 A1 A0 (D24) |
 | **7442** BCD-to-decimal | 25 | Pin configuration, logic symbol |
-| **74154** 4-to-16 decoder | 26–27 | 27 = 5-bit decoder from two 74HC154s |
+| **74154** 4-to-16 decoder | 26–27 | 26 = pin configuration, logic symbol, logic diagram, function table. **Slide inconsistency:** the pinout (a) names the enables E̅0 (pin 18) and E̅1 (pin 19), but the function table (d) heads them E̅1 E̅2; the app uses E̅0 E̅1 (pinout and NXP datasheet). 27 = 5-bit decoder from two 74HC154s |
 | 7-segment display; **74HC47** | 28–31, 54 | Not chosen for the app (D23) |
 | Encoding basics | 32–37 | 34 = 74HC147 figure; 35 keyboard encoder |
-| **74147** decimal-to-BCD priority encoder | 38–40 | 39 = logic symbol, function table; 40 example |
+| **74147** decimal-to-BCD priority encoder | 38–40 | 39 = logic symbol, function table; 40 example. The app uses the deck's output names A̅0–A̅3 (TI: A–D); pin 15 is NC |
 | **74148** octal-to-binary priority encoder | 41–43 | 42 = logic symbol, function table; 43 example with E̅I |
 | Encoder vs decoder discussion | 44 | |
 | Code converters, **74184** BCD-to-binary | 45–53 | Not chosen (D23) |
 | Gray code | 55–62 | 62 = binary ↔ Gray with XOR gates |
 | Multiplexer basics | 63–67 | 67 = four-line mux logic diagram |
-| TTL/CMOS mux table (**74157**, 74153, 74151, 74150) | 68 | Table 8-6, image only |
+| TTL/CMOS mux table (**74157**, 74153, 74151, 74150) | 68 | Table 8-6, image only. The 74157 has no pinout slide; the app follows the NXP 74HC157 datasheet |
 | **74151** 8-to-1 multiplexer | 69–74 | 69 symbol; 70 logic diagram; 71–74 mux as a logic-function generator |
 | Demultiplexer basics | 75–76 | |
 | **74139** dual 2-to-4 decoder/demux | 77–78 | 78 = routing to output 2a |

@@ -27,14 +27,15 @@ src/
   sim/
     types.ts             Bit, GateKind, PinRole, PinDef, GateDef, GateChipDef, BlockChipDef, ChipDef
     logic.ts             evalGate, chipUnits, evaluateUnit, evaluateChip, truthTable, functionTable, expression, levelName
-    msi.ts               MSI chip logic (binaryValue, toBits, decodeActiveLow, decoder138)
+    msi.ts               MSI chip logic: decoders (138, 139, 154, 42), encoders (147, 148), muxes (151, 157), comparator85
     describe.ts          Plain-language pin/gate descriptions for the pin inspector (gate and block chips)
-    logic.test.ts        Truth tables, notation, 7408 pinout, catalog
+    logic.test.ts        Truth tables, notation, every chip's datasheet pinout, MSI references, function tables, logic views
   chips/
     index.ts             CATALOG: every chip in the nav; `chip` is undefined until built
     layouts.ts           fromGroups() pinout builder; standardQuad2(kind), norQuad2(), hexInverter()
     c7400.ts … c7486.ts  One GateChipDef per chip: content + a layouts.ts pinout
-    c74138.ts            BlockChipDef: pins, function-table rows, pin phrases, status, presets
+    blocks.ts            Helpers for block-chip data: pinList, patternTable, logic-tree builders, timing rows
+    c74138.ts … c7485.ts One BlockChipDef per MSI chip: pins, units, function table, logic views, timing rows, presets
   state/
     useExplorer.ts       The single source of truth (waveforms + cursor) and all actions
   hooks/
@@ -45,22 +46,24 @@ src/
     ChipHeader.tsx       Part number, title, subtitle badges, equation, read-as, overview
     ChipView.tsx         DIP package with internal gates, pin tracing, pin inspector
     BlockView.tsx        Block chips: package with one function block, active-LOW bubbles, pin inspector
-    FunctionTable.tsx    Block chips: datasheet function table (X = don't care) + live status line
+    FunctionTable.tsx    Block chips: right-hand panel with Logic / Function table tabs; the table + live status line
+    LogicView.tsx        Block chips: the focused output's gate tree (switches, gates, lamp) + live equations
     Barred.tsx           Draws "~E1"-style active-LOW names with an overbar (HTML and SVG)
     FocusedGate.tsx      Large single-gate view: switches, gate, lamp, live equation
     TruthTable.tsx       Computed truth table, current-row highlight, click to set inputs
     TimingDiagram.tsx    Waveforms, scrub cursor, flip-to-edit, play/step, presets
     GateSymbol.tsx       ANSI gate outline geometry (gateGeom) + <GateBody>
     noPointerFocus.ts    onMouseDown helper: mouse clicks don't focus custom controls
+    pinShape.ts          pinRadius(): square input pins, round output pins (D27)
 ```
 
 ## Data model (`src/sim/types.ts`)
 
 ```ts
 type Bit = 0 | 1;
-type GateKind = 'AND' | 'OR' | 'NAND' | 'NOR' | 'XOR' | 'NOT';
+type GateKind = 'AND' | 'OR' | 'NAND' | 'NOR' | 'XOR' | 'XNOR' | 'NOT';  // XNOR: block chips only
 
-interface PinDef  { num: number; name: string; role: 'input' | 'output' | 'vcc' | 'gnd' }
+interface PinDef  { num: number; name: string; role: 'input' | 'output' | 'vcc' | 'gnd' | 'nc' }
 interface GateDef { id: number; kind: GateKind; inputs: number[]; output: number }
 interface ChipDef {
   part; title; subtitle; overview; readAs;   // content shown in the header
@@ -80,7 +83,7 @@ interface ChipDef {
   header (`['A', 'B']`) and for the live equation (`['1', '0']`). The header uses `gates[0].kind`
   because every gate on these chips is the same kind.
 
-## Block chips (MSI, Lecture 8; D24)
+## Block chips (MSI, Lecture 8; D24–D26)
 
 `ChipDef = GateChipDef | BlockChipDef`. Gate chips have no `kind` (or `'gates'`); block chips have
 `kind: 'block'`. Components switch on `kind`, never on part numbers.
@@ -89,47 +92,87 @@ interface ChipDef {
 interface BlockChipDef {
   kind: 'block';
   part; title; subtitle; overview; readAs; pins;
-  formula: string;                 // header formula; "~Yn" is drawn Y̅n
-  blockLabel: string;              // text inside the package's block
-  inputs: number[];                // input pins, function-table column order
-  outputs: number[];               // output pins, function-table column order
-  evaluate(inputs: Bit[]): Bit[];  // from src/sim/msi.ts
-  functionRows: (Bit | 'X')[][];   // the datasheet's input patterns; outputs are computed
-  pinInfo: Record<number, string>; // what each signal pin does, one phrase
-  status(inputs, outputs): string; // live one-line summary under the function table
-  outputBus: { label; sub; format(outputs): string };  // the timing diagram's output row
-  presets: { id; label; at(step): Bit[] }[];             // input patterns (Random, Clear are added)
+  formula: string;                  // header formula; "~Yn" is drawn Y̅n
+  blockLabel: string;               // text inside the package's block
+  units: BlockUnit[];               // { label, inputs, outputs }: one per decoder / mux section
+  evaluate(inputs: Bit[]): Bit[];   // ONE unit, from src/sim/msi.ts
+  functionTable(unit): FunctionTableDef;           // { columns, rows: { cells, match, apply }[] }
+  pinInfo: Record<number, string>;  // what each signal pin does
+  status(inputs, outputs, unit): string;           // live line under the function table
+  timing(unit): { inputs: TimingRowDef[]; outputs: TimingRowDef[] };  // rows: one pin, or a bus
+  logic(unit): LogicViewDef[];      // Logic-tab views: { tab, out, node, pin? }
+  presets: { id; label; at(step): Bit[] }[];       // per-unit input patterns (+ Random, Clear)
 }
+type LogicNode = { pin } | { kind: GateKind; inputs: LogicNode[]; label?: string; collapsed?: string };
 ```
 
 - **Active-LOW names** are written with a leading `~` (`~E1`, `~Y5`) everywhere: pin names,
-  formula, pin phrases, status, bus labels. `Barred` / `BarredSvg` draw the overbar; `plainText`
-  gives "E1-bar" for aria labels.
-- **Units.** `chipUnits(chip)` gives the independently driven units: one per gate, or one for a
-  block chip. `useExplorer` keeps `waves[unit][input][step]`; a block chip has one unit, so
-  `focus` is always 0. `evaluateUnit` evaluates a unit for the timing diagram.
-- **Function table.** `functionTable(chip)` evaluates each row with X = 0. A test checks every row
-  gives the same outputs for every value of its X inputs. Clicking a row sets its fixed inputs
-  and keeps the current value of the X ones. The highlighted row is the first that matches.
+  formula, overview, pin phrases, status, timing labels, tab names. `Barred` / `BarredSvg` draw the
+  overbar; `plainText` gives "E1-bar" for aria labels. Wrap `<Barred>` in a `<span>` inside a
+  button: buttons are flex boxes with a gap, so "1" and "~Y0" would be spaced apart.
+- **Units.** `chipUnits(chip)` gives the independently driven units: one per gate, or
+  `chip.units`. Units can **share pins** (the 74157's S and ~E), which is why `useExplorer` keeps
+  waveforms per pin (see State model). `evaluateChip` evaluates every unit; shared inputs are read
+  once.
+- **Pin roles:** `input`, `output`, `vcc`, `gnd`, and `nc` (not connected; the 74147's pin 15),
+  which `BlockView` draws like a power pin.
+- **Function table.** Chip data builds the rows: `patternTable(pins, unitInputs, columns,
+  patterns)` in `src/chips/blocks.ts` for 1/0/X rows (columns can be a subset of the unit's
+  inputs; the rest are don't-care), or hand-written `match`/`apply` rows for conditions (7485:
+  "A3>B3"). `functionTable(chip, unit)` in `logic.ts` **computes each output cell** by enumerating
+  every input combination the row matches: `'1'`/`'0'` if fixed, else the input it follows (`"I5"`)
+  or its complement (`"I5′"`), else `'?'` (a test checks there are none). Cached per chip and unit.
+  Clicking a row calls `apply` on the current inputs. The highlighted row is the first that matches.
+  Tables with more than 16 columns use `.dense` cells; long tables scroll with a sticky header,
+  and the current row is scrolled into view.
 - **Layout.** `.explorer.block`: header, then `.block-body` = `BlockView` (4fr) and `.block-right`
-  (8fr) = `FunctionTable` (natural height) above `TimingDiagram` (the rest). At 1280×720 the timing
-  SVG is 191 px in a 195 px area with 24 px rows: no slack, as on the gate pages.
+  (8fr), split 55/45 between the tabbed panel and `TimingDiagram`. At 1280×720 the timing SVG is
+  183 px in a 187 px area on every MSI chip: no slack.
 - **BlockView geometry:** `W` 440, `PITCH` 62, height from the pin count (`pins.length / 2` per
-  side), so 24-pin packages just get taller. Wires run straight from each pin to the block edge;
-  an active-LOW pin gets a bubble at the edge.
-- **TimingDiagram** for block chips: one bit row per input pin (label = pin name, sub = pin number),
-  then one **bus row** for the outputs: a hexagon per run of equal `outputBus.format` values,
-  labelled with the value. Row minimum is 22 px (26 for gates).
+  side), so 24-pin packages just get taller (then height-bound; `.chip-svg-wrap` has 22 px top
+  padding so pin 1 clears the absolutely positioned title). Wires run straight from each pin to
+  the block edge; an active-LOW pin gets a bubble at the edge.
+- **Panel tabs (D25).** `App` holds `tab` ('logic' | 'table', default 'logic') and `view` (index
+  into `chip.logic(focus)`). `FunctionTable` renders both panes in one grid cell (`.tab-stack`).
+  Its title row: Logic / Function table, unit tabs (more than one unit), view tabs (Logic tab;
+  with more than 10 views the shared prefix is printed once and the tabs show suffixes).
+  **Clicking a pin** in `BlockView`: focuses the pin's unit (unless the pin is shared) and opens the
+  view whose `pin ?? out` is that pin (74151 data pins open their I-view), else one whose `out` is.
+- **Logic tab (`LogicView`).** `evalLogic` evaluates a node; `logicExpression` writes lecture
+  notation (labelled sub-gates such as `E` become their label and get their own equation line;
+  collapsed nodes are written as their label). Layout (`place`):
+  - Leaves (pins → switches, collapsed nodes → dashed boxes) stack on the left in first-visit order.
+    Identical sub-trees are keyed (`keyOf`) and placed once, so shared inverters fan out.
+  - Each gate sits in a column by height in the tree, at the mean y of its inputs; gates in a
+    column are pushed apart so none overlap. Switch width grows with the longest name (IA=B).
+  - Wires (`wires`): each source gets one vertical **lane** in the gap before its gate column,
+    shared by all its fan-out. Lanes are ordered so wires don't cross (downward wires: higher
+    source further right; upward: lower source further right) and lanes whose vertical spans don't
+    overlap share an x. A wire that skips a column turns in the gap after its source **if** a gate
+    in between sits in its row (the 74157's S, used raw and through an inverter).
+  - The SVG viewBox fits the drawing; equations over 58 characters split onto two lines.
+- **TimingDiagram** for block chips: rows come from `chip.timing(focus)`. Values per step come
+  from `evaluateChip` over every pin's waveform, so a row can show any pins. One-pin rows are
+  waveforms (input rows are flip targets); multi-pin rows are **buses**, a hexagon per run of equal
+  `format(bits)` text, the text hidden when the run is too narrow. The label column shows the bus
+  value at the cursor only if it fits beside the row's sub-label. Row minimum 22 px. Multi-unit
+  chips title it "Timing diagram: decoder 2".
 
 ### How to add a block chip
 1. Put its logic in `src/sim/msi.ts` (reuse `decodeActiveLow`, `binaryValue`, `toBits`).
 2. Write `src/chips/cXXXX.ts` as a `BlockChipDef`, pin names from the datasheet (D20), with `~` for
-   active-LOW. Keep `overview` near 170 characters and `subtitle` to two badges: the header has
-   less room than on gate chips because the formula is wider.
-3. Set `chip:` on its `CATALOG` entry. Add tests: datasheet pinout, function table against the
-   datasheet, X really don't-care, and an exhaustive check against an independent formula.
-4. Screenshot at 1280×720 and measure the timing rows. Chips with many inputs (74151: 12; 7485:
-   11) will need input buses in the timing diagram, which isn't built yet.
+   active-LOW. Helpers in `src/chips/blocks.ts`: `pinList`, `patternTable`, `pin`/`not`/`gate`/
+   `collapsed` for logic trees, `addressTerms`, `bitRows`, `lowOutputBus`, `lowInputBus`.
+   Keep the header to 88 px at 1280×720: `overview` about 150 characters and `readAs` short, since
+   the formula is wider than on gate chips.
+3. At most 7 timing rows; group inputs into buses if needed. Keep the two pattern labels short
+   (about 25 characters together) so the controls stay on one line.
+4. Register it in `CATALOG`. Add it to the per-chip tables in `logic.test.ts`: `MSI_PINOUTS`
+   (datasheet), `REFERENCE` (an independent formula, checked over every input combination) and,
+   where the datasheet has one, `TABLE_OUTPUTS`. The generic MSI tests then check unit wiring, the
+   function table (no '?', every row clickable), every Logic view against `evaluate`, presets and
+   timing rows.
+5. Screenshot at 1280×720 and measure: header height, timing SVG vs. its area, controls height.
 
 ## Simulation (`src/sim/logic.ts`)
 
@@ -146,12 +189,17 @@ is hand-entered.
 ## State model (`src/state/useExplorer.ts`): the single source of truth
 
 ```
-waves[gateIndex][inputIndex][step] : Bit     // STEPS = 16
+pinWaves[pin][step] : Bit                    // every input pin's waveform; STEPS = 16
 cursor : step (0..15)
-focus  : gateIndex
+focus  : unit index (gate, or block-chip unit)
 playing: boolean
-patterns[gateIndex] : Preset | null          // which input pattern each gate shows; null = edited
+patterns[unit] : Preset | null               // which input pattern each unit shows; null = edited
 ```
+
+Waveforms are kept **per pin** so block-chip units can share pins (the 74157's S and ~E). The
+hook also returns `waves[unit][input][step]`, read from `pinWaves`, for per-unit views. Editing a
+pin marks every unit that uses it as edited (`markEdited`); a preset applied to one unit marks
+other units sharing its pins as edited.
 
 - **Derived:** `inputs` (pin → Bit) is the waves read at `cursor`, and `values` is
   `evaluateChip(chip, inputs)`. No component stores its own copy of pin values.
@@ -214,6 +262,9 @@ units and scale with the drawing (16 units ≈ 10.8 px at 1280×720).
   `describe.ts`, with the title inline. It's deliberately **not a tooltip** (D21): a clicked pin's
   text stays put during a lecture. The strip has a **fixed 3-line height**: if hover text changed
   its height, the chip SVG above would rescale and move pins under the pointer.
+- **Pin shapes (D27):** `pinRadius(role)` (`pinShape.ts`, shared with `BlockView`) makes input
+  pins square and output pins round. The `pin-group` gets the pin's role as a class; CSS makes
+  inputs raised (`--pin-edge` ledge via `drop-shadow`) with a hover state, outputs flat.
 - **Clicks:** clicking a pin selects it, toggles it if it's an input, and focuses its gate.
   Clicking a gate's hit area focuses that gate and clears the selection.
 - **Selection** is stored as `{ pin, focus }` and only shown while `focus` is unchanged, so

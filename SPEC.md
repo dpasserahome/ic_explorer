@@ -59,15 +59,15 @@ chose these, rolled out **one chip first** (the 74138), then the rest after revi
 
 | Chip | Function | Package | Status |
 |------|----------|---------|--------|
-| 74138 | 3-to-8 line decoder (1-of-8), active-LOW outputs | 16-pin | **built, awaiting review** |
-| 74139 | Dual 2-to-4 decoder / demultiplexer | 16-pin | planned |
-| 74154 | 4-to-16 decoder / demultiplexer | **24-pin** | planned |
-| 7442 | BCD-to-decimal decoder (1-of-10) | 16-pin | planned |
-| 74147 | Decimal-to-BCD (10-to-4) priority encoder | 16-pin | planned |
-| 74148 | Octal-to-binary (8-to-3) priority encoder | 16-pin | planned |
-| 74151 | 8-to-1 multiplexer | 16-pin | planned |
-| 74157 | Quad 2-to-1 multiplexer (only in the deck's Table 8-6) | 16-pin | planned |
-| 7485 | 4-bit magnitude comparator | 16-pin | planned |
+| 74138 | 3-to-8 line decoder (1-of-8), active-LOW outputs | 16-pin | built |
+| 74139 | Dual 2-to-4 decoder / demultiplexer | 16-pin | **built (D26), awaiting review** |
+| 74154 | 4-to-16 decoder / demultiplexer | **24-pin** | **built (D26), awaiting review** |
+| 7442 | BCD-to-decimal decoder (1-of-10) | 16-pin | **built (D26), awaiting review** |
+| 74147 | Decimal-to-BCD (10-to-4) priority encoder | 16-pin | **built (D26), awaiting review** |
+| 74148 | Octal-to-binary (8-to-3) priority encoder | 16-pin | **built (D26), awaiting review** |
+| 74151 | 8-to-1 multiplexer | 16-pin | **built (D26), awaiting review** |
+| 74157 | Quad 2-to-1 multiplexer (only in the deck's Table 8-6) | 16-pin | **built (D26), awaiting review** |
+| 7485 | 4-bit magnitude comparator | 16-pin | **built (D26), awaiting review** |
 
 Not chosen: 7447 BCD-to-7-segment (lamp test/ripple blanking), 74184 (BCD-to-binary PROM), and
 the 4051 analog mux (analog, outside the 0/1 model).
@@ -77,8 +77,16 @@ depend on all inputs together. An MSI chip page has the header, then a tall **pi
 left (the package with one function block wired to every pin, bubbles on active-LOW pins), and on
 the right the **function table** (the datasheet's rows with X = don't care, computed outputs, the
 current row highlighted, click a row to set the inputs, a live status line underneath) above the
-**timing diagram** (one row per input pin plus the outputs summarized as one bus row). There's no
-focused-gate panel.
+**timing diagram** (one row per input pin plus the outputs summarized as one bus row). The function
+table shares its panel with a **Logic** tab (D25): the selected output's gates from the datasheet
+logic diagram, live, with its equation. Pick the output with Y̅0–Y̅7 tabs or by clicking its pin.
+
+**Multi-unit and wide chips (D26):** the 74139 (two decoders) and 74157 (four muxes) add unit tabs;
+clicking a pin switches to its unit, and pins shared by every unit (the 74157's S and E̅) stay
+shared. Chips with many inputs show some timing rows as buses (the 74151's data word, the 7485's
+A and B as numbers, the encoders' inputs as "which Ī is LOW"), so no chip has more than 7 rows.
+Big sub-circuits in the Logic tab can be collapsed into a dashed, labelled box (the 7485's GT and
+EQ, the 74151's other seven data terms).
 
 ## Screen layout
 

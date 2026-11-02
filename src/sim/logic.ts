@@ -1,4 +1,4 @@
-import type { Bit, BlockChipDef, ChipDef, GateKind } from './types';
+import type { Bit, BlockChipDef, ChipDef, FunctionRowDef, GateKind, LogicNode } from './types';
 
 export function evalGate(kind: GateKind, inputs: Bit[]): Bit {
   const ones = inputs.filter((b) => b === 1).length;
@@ -13,17 +13,19 @@ export function evalGate(kind: GateKind, inputs: Bit[]): Bit {
       return ones > 0 ? 0 : 1;
     case 'XOR':
       return (ones % 2) as Bit;
+    case 'XNOR':
+      return (1 - (ones % 2)) as Bit;
     case 'NOT':
       return inputs[0] === 1 ? 0 : 1;
   }
 }
 
 /**
- * The chip's independently driven units: one per gate, or a single unit for a block chip. Each
- * unit owns its input pins (in order) and output pins, and gets its own input waveforms.
+ * The chip's units: one per gate, or a block chip's units (usually one). A unit lists its input
+ * pins (in order) and output pins. Block-chip units may share input pins.
  */
 export function chipUnits(chip: ChipDef): { inputs: number[]; outputs: number[] }[] {
-  if (chip.kind === 'block') return [{ inputs: chip.inputs, outputs: chip.outputs }];
+  if (chip.kind === 'block') return chip.units;
   return chip.gates.map((g) => ({ inputs: g.inputs, outputs: [g.output] }));
 }
 
@@ -43,25 +45,55 @@ export function evaluateChip(chip: ChipDef, inputs: Record<number, Bit>): Record
   return values;
 }
 
+/** n bits of value, MSB first. */
+export const toBits = (value: number, n: number): Bit[] =>
+  Array.from({ length: n }, (_, i) => ((value >> (n - 1 - i)) & 1) as Bit);
+
 export interface FunctionRow {
-  inputs: (Bit | 'X')[];
-  outputs: Bit[];
+  def: FunctionRowDef;
+  /**
+   * One cell per output: "1"/"0" when the row fixes it, or the input it follows, such as "I5" or
+   * "I5′" (as the 74151's datasheet writes it). "?" would mean the row doesn't determine it; tests
+   * check that never happens.
+   */
+  outputs: string[];
 }
+
+const tableCache = new WeakMap<BlockChipDef, FunctionRow[][]>();
 
 /**
- * A block chip's function table: the datasheet's input patterns with computed outputs. A row's
- * outputs are evaluated with every X at 0; tests check that X really doesn't matter.
+ * A unit's function table with computed output cells, found by evaluating every input combination
+ * that falls under each row.
  */
-export function functionTable(chip: BlockChipDef): FunctionRow[] {
-  return chip.functionRows.map((inputs) => ({
-    inputs,
-    outputs: chip.evaluate(inputs.map((b) => (b === 'X' ? 0 : b))),
-  }));
-}
+export function functionTable(chip: BlockChipDef, unit: number): FunctionRow[] {
+  let perUnit = tableCache.get(chip);
+  if (!perUnit) tableCache.set(chip, (perUnit = []));
+  if (perUnit[unit]) return perUnit[unit];
 
-/** Whether concrete input bits match a function-table pattern. */
-export const matchesRow = (pattern: (Bit | 'X')[], bits: Bit[]) =>
-  pattern.every((b, i) => b === 'X' || b === bits[i]);
+  const { inputs, outputs } = chip.units[unit];
+  const n = inputs.length;
+  const name = (p: number) => chip.pins.find((x) => x.num === p)!.name;
+  const combos = Array.from({ length: 1 << n }, (_, c) => {
+    const bits = toBits(c, n);
+    return { bits, outs: chip.evaluate(bits) };
+  });
+
+  const rows = chip.functionTable(unit).rows.map((def) => {
+    const matching = combos.filter((c) => def.match(c.bits));
+    const cells = outputs.map((_, k) => {
+      const vals = matching.map((c) => c.outs[k]);
+      if (vals.length && vals.every((v) => v === vals[0])) return String(vals[0]);
+      for (let i = 0; i < n; i++) {
+        if (vals.length && matching.every((c, j) => vals[j] === c.bits[i])) return name(inputs[i]);
+        if (vals.length && matching.every((c, j) => vals[j] !== c.bits[i])) return `${name(inputs[i])}′`;
+      }
+      return '?';
+    });
+    return { def, outputs: cells };
+  });
+  perUnit[unit] = rows;
+  return rows;
+}
 
 export interface TruthRow {
   inputs: Bit[];
@@ -89,9 +121,33 @@ export function expression(kind: GateKind, terms: string[]): string {
       return `(${terms.join(' + ')})′`;
     case 'XOR':
       return terms.join(' ⊕ ');
+    case 'XNOR':
+      return `(${terms.join(' ⊕ ')})′`;
     case 'NOT':
       return `${terms[0]}′`;
   }
+}
+
+/** Value of a gate-level path, given pin values. */
+export function evalLogic(node: LogicNode, values: Record<number, Bit>): Bit {
+  if ('pin' in node) return values[node.pin] ?? 0;
+  return evalGate(node.kind, node.inputs.map((n) => evalLogic(n, values)));
+}
+
+/**
+ * Lecture-notation expression for a gate-level path. Below the root, a sub-gate for which `sub`
+ * returns text (by default its label, e.g. the enable "E") is written as that text.
+ */
+export function logicExpression(
+  node: LogicNode,
+  term: (pin: number) => string,
+  sub: (node: LogicNode) => string | undefined = (n) => ('kind' in n ? n.label : undefined),
+  root = true,
+): string {
+  if ('pin' in node) return term(node.pin);
+  const short = root ? undefined : sub(node);
+  if (short !== undefined) return short;
+  return expression(node.kind, node.inputs.map((n) => logicExpression(n, term, sub, false)));
 }
 
 export const levelName = (b: Bit) => (b ? 'HIGH' : 'LOW');

@@ -4,7 +4,7 @@ import { BlockView } from './components/BlockView';
 import { ChipHeader } from './components/ChipHeader';
 import { ChipView } from './components/ChipView';
 import { FocusedGate } from './components/FocusedGate';
-import { FunctionTable } from './components/FunctionTable';
+import { FunctionTable, type BlockTab } from './components/FunctionTable';
 import { SideNav } from './components/SideNav';
 import { TimingDiagram } from './components/TimingDiagram';
 import { TruthTable } from './components/TruthTable';
@@ -49,6 +49,9 @@ export function App() {
 function Explorer({ chip }: { chip: ChipDef }) {
   const ex = useExplorer(chip);
   const { step, setPlaying } = ex;
+  // Block chips: which right-hand tab shows, and which Logic view (an index into chip.logic(focus)).
+  const [tab, setTab] = useState<BlockTab>('logic');
+  const [view, setView] = useState(0);
 
   // Lecture shortcuts: ← → step through time, space plays/pauses.
   useEffect(() => {
@@ -67,15 +70,50 @@ function Explorer({ chip }: { chip: ChipDef }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [step, setPlaying]);
 
-  // MSI chips: a tall pin diagram on the left; function table and timing on the right.
+  // MSI chips: a tall pin diagram on the left; Logic / Function table tabs and timing on the right.
   if (chip.kind === 'block') {
+    const views = chip.logic(ex.focus);
+    const focusUnit = (u: number) => {
+      ex.setFocus(u);
+      setView(0);
+    };
+    // A clicked pin opens its own Logic view if it has one, in its own unit (shared pins stay put).
+    const onPinClick = (p: number) => {
+      const owners = chip.units.flatMap((u, k) => (u.inputs.includes(p) || u.outputs.includes(p) ? [k] : []));
+      const u = owners.length === 1 ? owners[0] : ex.focus;
+      const unitViews = chip.logic(u);
+      let k = unitViews.findIndex((v) => (v.pin ?? v.out) === p);
+      if (k < 0) k = unitViews.findIndex((v) => v.out === p);
+      if (u !== ex.focus) ex.setFocus(u);
+      if (k >= 0) {
+        setView(k);
+        setTab('logic');
+      } else if (u !== ex.focus) setView(0);
+    };
     return (
       <main className="explorer block">
         <ChipHeader chip={chip} />
         <div className="block-body">
-          <BlockView chip={chip} values={ex.values} onTogglePin={ex.togglePin} />
+          <BlockView
+            chip={chip}
+            values={ex.values}
+            onTogglePin={ex.togglePin}
+            focusedPin={views[Math.min(view, views.length - 1)].out}
+            onPinClick={onPinClick}
+          />
           <div className="block-right">
-            <FunctionTable chip={chip} values={ex.values} onSetInputs={ex.setGateInputs} />
+            <FunctionTable
+              chip={chip}
+              values={ex.values}
+              focus={ex.focus}
+              onFocus={focusUnit}
+              onSetInputs={ex.setGateInputs}
+              tab={tab}
+              onTab={setTab}
+              view={view}
+              onView={setView}
+              onTogglePin={ex.togglePin}
+            />
             <TimingDiagram chip={chip} ex={ex} />
           </div>
         </div>

@@ -68,7 +68,8 @@ export function describeBlockPin(chip: BlockChipDef, pin: number, values: Record
   const v = values[pin] ?? 0;
   if (def.role === 'vcc') return { title, body: 'Power supply (+5 V) for the whole chip.' };
   if (def.role === 'gnd') return { title, body: 'Ground (0 V), the common return path for the whole chip.' };
+  if (def.role === 'nc') return { title, body: 'Not connected: nothing inside the chip uses this pin.' };
   const now = `Currently ${v} (${levelName(v)}).`;
   if (def.role === 'input') return { title, body: `${chip.pinInfo[pin]} ${now} Click to toggle.` };
-  return { title, body: `${chip.pinInfo[pin]} ${now} Driven by the chip, so change the inputs instead.` };
+  return { title, body: `${chip.pinInfo[pin]} ${now} Driven by the chip.` };
 }

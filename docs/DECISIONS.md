@@ -212,7 +212,8 @@ add the rest after review** (the same flow as the 7408).
   function-table order, an `evaluate` function in `src/sim/msi.ts`, the datasheet's function-table
   input patterns (outputs are computed), per-pin phrases, a status line, an output bus for the
   timing diagram, and its own input patterns. Gate chips are unchanged. Shared pins (e.g. the
-  74157's select and enable) are why it's one block, not several units.
+  74157's select and enable) are why it's one block, not several units. _(Superseded by D26:
+  block chips now have units, and waveforms are kept per pin so units can share pins.)_
 - **Layout.** Pin diagram on the left (4fr), function table above timing on the right (8fr). The
   focused-gate panel is dropped for block chips; the function table plus status line does its job.
   This was the only arrangement found that keeps all timing rows visible at 1280×720.
@@ -227,3 +228,77 @@ add the rest after review** (the same flow as the 7408).
 - **Input patterns for the 74138:** "Count 0–7" (enabled, address counts, two steps each) and
   "Enable off" (same, with E3 LOW for steps 6–9), plus the shared Random and Clear.
 - **Nav:** a second section, "MSI functions", lists all nine chips; unbuilt ones show "soon".
+
+### D25 · MSI chips show the focused output's internal logic, tabbed with the function table (2026-11-02 · User; details Agent)
+The user's review of the 74138: "you haven't shown the focused logic for the selected pin. The chip
+is a black box." Offered two places for it (inside the pin diagram, or a separate panel tabbed with
+the function table), the user chose: "Let's tab it with the Function Table section for now."
+- **Logic tab** (default) and **Function table** tab share the right-hand panel. Both stay mounted in
+  one grid cell, so the panel keeps the table's height and the timing diagram doesn't move.
+- The Logic tab draws **one output's gate path** from the datasheet logic diagram (deck slide 23c):
+  input switches → inverters → enable AND ("E") → that output's NAND → lamp, with live wire colors
+  and two live equations (`E = E̅1′ · E̅2′ · E3 = …` and `Y̅5 = (E · A2 · A1′ · A0)′ = … = 0`). Drawing
+  all eight NANDs was judged too dense for a projector.
+- Choose the output with Y̅0–Y̅7 tabs, or by **clicking an output pin** (which also switches to the
+  Logic tab). The focused output's pin is outlined in orange. It starts at Y̅0.
+- The gates are chip data (`outputLogic`, a small gate tree per output), not drawn per part; a test
+  checks each tree against `evaluate` for all 64 input combinations.
+- **Side fix:** on MSI pages at short heights the step readout ("Step 0 of 15") is hidden. With
+  the narrower timing panel, the "Edited" badge otherwise wrapped the controls and clipped the
+  timing rows. The ruler's cursor pill already shows the step.
+
+
+### D26 · The other eight Lecture 8 chips, and a general block-chip model (2026-11-02 · User asked; details Agent, awaiting review)
+"Please continue with the rest of the chips in this section." Built the 74139, 74154, 7442, 74147,
+74148, 74151, 74157 and 7485 on the D24/D25 pattern. What they needed from the model:
+- **Units.** A block chip has one or more identical **units** (`BlockUnit`: label, input and output
+  pins). The 74139 has two decoders and the 74157 four muxes, chosen with unit tabs ("Decoder 1",
+  "Mux 3"). The other seven have one. Units may **share pins** (the 74157's S and E̅), so
+  `useExplorer` keeps one waveform **per pin**. Editing a shared pin, or applying a pattern that
+  moves one, marks every unit using it as "Edited".
+- **Function tables are chip data, not bit patterns.** A row can hold a condition ("A3>B3",
+  7485) as well as 1/0/X, with its own `match` and `apply`. Output cells are still computed: each
+  is 1 or 0 when the row fixes it, or the input it follows ("I5" on the 74151, "I5′" for Y̅).
+  A test checks there's no case the computation can't name.
+- **Timing rows are chip data.** Chips with many inputs group them into **bus rows**: the 74151's
+  data inputs as "I 7…0" (the 8-bit word), the 7485's A and B as numbers, the encoders' inputs as
+  "which Ī is LOW", and the encoders' outputs as the code n. Every chip has at most 7 rows, which
+  is what fits at 1280×720.
+- **Logic tab.** Views are per output (or, on the 74151, per data input: the 8-input OR is drawn
+  as one term plus a dashed "rest: other 7" box). Big sub-circuits can be **collapsed** into a
+  dashed labelled box: the 7485's A>B view shows "GT: A > B" and "EQ: A = B" boxes. The 7485's
+  A=B view uses **XNOR** gates (added to the gate kinds). Identical sub-paths are drawn once and
+  fan out. With more than 10 outputs (74154) the tabs print the shared name once ("Y̅") and then
+  0–15.
+- **Pin names follow the datasheets (D20):** NXP 74HC names, which match the deck, for the
+  74138/139/154/151/157 and 7442. Exceptions: the **74147** uses the deck's A̅0–A̅3 for outputs
+  (TI calls them A–D); the **7485** uses TI's and the deck's A>B, A=B, A<B and IA>B, IA<B, IA=B
+  (NXP prefixes them with Q). The **74157** isn't in the deck's pinouts, only Table 8-6, so it
+  follows the NXP datasheet alone. The 74147's pin 15 is **NC** (a new pin role, drawn like a
+  power pin).
+- **7485 cascade inputs** follow TI's function table exactly when A = B, including the odd rows:
+  IA>B and IA<B both HIGH with IA=B LOW gives all outputs LOW, and all three LOW gives A>B and A<B
+  both HIGH.
+- **Input patterns (agent's choice),** two per chip plus Random and Clear: 74139 "Count 0–3" /
+  "Enable off"; 74154 "Count 0–15" / "Enable off"; 7442 "Count 0–9" / "Count 0–15"; 74147
+  "One key at a time" / "Priority" (~I3 held while the others are pressed); 74148 "One input at a
+  time" / "Priority" (~I2 held); 74151 "Select I0–I7" / "Watch I5"; 74157 "Switch S" / "Enable
+  off"; 7485 "A counts, B = 5" / "A = B, cascade".
+- **Fitting 720p.** Header copy was shortened where it pushed the header past 88 px (74147,
+  74148, 7485), and pattern labels kept short so the timing controls stay on one line.
+
+### D27 · Output pins look different from input pins (2026-11-02 · User; design Agent)
+Twice the user clicked an output pin (74138 pin 7, then 7485 pin 7) expecting it to toggle. The
+user: "Please make the outputs visually distinct. Look at how Untitled UI or other might indicate
+a driven output."
+- **References.** Untitled UI shows controls as raised (white fill, border, shadow, hover state)
+  and read-only values as flat. Logic simulators (Logisim, Digital, Falstad) draw inputs as square
+  switches and outputs as round lamps, as the app's Focused gate and Logic tab already do.
+- **Inputs:** square boxes (5 px corners), raised with a 2 px ledge, a hover state and a pointer
+  cursor. **Outputs:** round pills, flat, no hover state. On gate chips they get the default cursor;
+  on MSI chips they keep the pointer because clicking one opens its Logic view. Power and NC pins
+  are unchanged.
+- The inspector's hint now explains it: "Square pins are inputs: click one to toggle it. Round
+  pins are outputs, driven by the chip (gates)…".
+- New tokens `--pin-edge` (stronger in dark mode, where the border token was nearly invisible) and
+  `--hi-soft-hover`.
