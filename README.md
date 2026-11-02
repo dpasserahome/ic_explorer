@@ -6,8 +6,8 @@ sync: toggle a pin, scrub through time, and watch the signal travel through the 
 
 Built for both live lecture demos (it fits a 1280×720 projector screen) and student self-study.
 
-**Status:** v1 in progress, covering the basic gates. The 7408 (quad AND) is built; the 7400,
-7402, 7404, 7432 and 7486 are next. See `docs/STATUS.md`.
+**Status:** v1 in progress, covering the basic gates. All six chips are built: 7400 (NAND), 7402
+(NOR), 7404 (hex inverter), 7408 (AND), 7432 (OR) and 7486 (XOR). See `docs/STATUS.md`.
 
 ## Run it
 

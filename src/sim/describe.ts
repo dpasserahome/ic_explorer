@@ -1,6 +1,9 @@
 import { expression, levelName } from './logic';
 import type { Bit, ChipDef } from './types';
 
+/** "pin 1" or "pins 1 and 2". */
+const pinsPhrase = (pins: number[]) => (pins.length === 1 ? `pin ${pins[0]}` : `pins ${pins.join(' and ')}`);
+
 export interface Description {
   title: string;
   body: string;
@@ -39,14 +42,14 @@ export function describePin(chip: ChipDef, pin: number, values: Record<number, B
     };
   }
 
-  const pinList = gate.inputs.join(' and ');
+  const pinList = pinsPhrase(gate.inputs);
   return {
     title,
     body:
       `Output of Gate ${gate.id}: ${chip.outputLabel} = ` +
       `${expression(gate.kind, chip.inputLabels.slice(0, gate.inputs.length))} = ` +
       `${expression(gate.kind, gate.inputs.map((p) => String(v(p))))} = ${v(gate.output)}. ` +
-      `The chip drives this pin, so you can't set it directly. Change pins ${pinList} instead.`,
+      `The chip drives this pin, so you can't set it directly. Change ${pinList} instead.`,
   };
 }
 
@@ -54,6 +57,6 @@ export function describeGate(chip: ChipDef, gateIndex: number): Description {
   const gate = chip.gates[gateIndex];
   return {
     title: `Gate ${gate.id} · ${gate.kind}`,
-    body: `Inputs on pins ${gate.inputs.join(' and ')}, output on pin ${gate.output}. Click to focus this gate.`,
+    body: `${gate.inputs.length === 1 ? 'Input' : 'Inputs'} on ${pinsPhrase(gate.inputs)}, output on pin ${gate.output}. Click to focus this gate.`,
   };
 }

@@ -26,7 +26,7 @@ slides are image-only, so their content has to be viewed, not text-extracted.
 | **NAND** | 23–24 | "Output is always HIGH unless all inputs go HIGH" |
 | **7400 pinout** | 25 | |
 | **NOR** | 26–27 | |
-| **7402 pinout** | 28 | |
+| **7402 pinout** | 28 | Labels under pins 1–6 say 1A 1B 1Y 2A 2B 2Y, but the drawn wiring (and the datasheet) is 1Y 1A 1B 2Y 2A 2B |
 | Reverse problem | 29 | Given X, find input B (a predict-mode idea) |
 | Waveform generation (Johnson counter) | 30–34 | Problems 2–4 |
 | Hex ICs ("six gates") | 35 | |
@@ -35,7 +35,7 @@ slides are image-only, so their content has to be viewed, not text-extracted.
 | IEEE/IEC symbols | 41 | Source for the planned symbol toggle |
 | Discussion; 7427 probe problem | 42–43 | |
 | **XOR** | 44–46 | 45 = XOR built from basic gates; 46 symbol + equation |
-| **7486 pinout** | 47 | |
+| **7486 pinout** | 47 | Labeled A1/B1/F1 style; pins 9/10 and 12/13 have A and B swapped compared with the datasheet (no logical difference for XOR) |
 | Combinational example | 48 | `X = (A + ((AB) ⊕ C))′` |
 | XNOR (equality gate) | 49, 51–53 | 74266 pinout on 50 |
 | Parity generator/checker | 54–61 | 74280 on 60 |

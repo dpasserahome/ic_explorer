@@ -125,3 +125,24 @@ The behavior choices were the agent's:
   clicked. Hovering a gate always explains that gate.
 - **Timing diagram: drag anywhere scrubs, a click on an input step flips it.** Previously input
   rows (two thirds of the diagram) only flipped on click and ignored drags.
+
+### D19 · Remaining five chips built (2026-11-02 · User asked; content Agent, unreviewed)
+"Commit and then proceed with remaining basic chips." The agent added the 7400, 7402, 7404, 7432
+and 7486. Choices the user hasn't reviewed:
+- **Pinouts follow the TI datasheets where the deck disagrees.** The 7402 slide's labels
+  (1A/1B/1Y on pins 1–3) contradict its own wiring; the 7486 slide swaps A/B on the upper pins.
+- **`readAs`** for chips the deck gives no phrasing for: "X equals NOT (A AND B)", "X equals NOT
+  (A OR B)", "X equals NOT A", "X equals A XOR B". The OR phrasing is "X equals A OR B", matching
+  the 7408's style rather than the deck's "X = A or B".
+- **Overviews** stick to deck statements: NAND/NOR as inverted AND/OR (slides 23, 26, 80), OR as
+  a disable gate (19), the inverter complementing a signal (20), XOR for parity, comparison and
+  controlled inversion (44, 82). The 7402 overview points out its outputs-first pinout. The 7404
+  title is "Hex inverter (NOT gate)".
+- **Gate tabs wrap** onto a second row when they don't fit (the 7404's six tabs at 1024×768).
+
+### D20 · Datasheets are authoritative, not the decks (2026-11-02 · User)
+"The app should always follow data sheets. There are frequently errors in the decks." For any
+technical fact (pinouts, pin names, chip behavior), the manufacturer's datasheet wins over the
+lecture slides. The decks still set notation, phrasing and teaching content (D19's choices for the
+7402 and 7486 are confirmed by this). Where a deck disagrees with a datasheet, follow the datasheet
+and note the slide error in `docs/CONTENT-MAP.md`. There's no need to ask the user each time.

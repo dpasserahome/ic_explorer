@@ -43,6 +43,9 @@ npm run preview   # serve dist/
 - **Feedback arrives as annotated screenshots** of wireframes/builds, plus short lists of changes.
 - **Follow the decks.** Match their notation and phrasing: inputs A, B, output X; `′` for complement;
   `·`, `+`, `⊕` operators; "read as" phrasing like "X equals A AND B"; HIGH/LOW and 1/0.
+- **Datasheets beat the decks on facts.** Pinouts, pin names and chip behavior always follow the
+  manufacturer's datasheet. The decks often have errors (the 7402 and 7486 pinout slides do).
+  Don't ask; follow the datasheet and note the slide error in `docs/CONTENT-MAP.md` (D20).
 - **Keep v1 simple.** Don't add electrical detail, propagation delay, or new features unless asked.
   Park ideas in `SPEC.md` → "Future ideas".
 

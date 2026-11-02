@@ -1,6 +1,6 @@
 # Architecture
 
-_Last updated 2026-11-02. Describes the code as it stands after the 7408 first pass._
+_Last updated 2026-11-02. Describes the code as it stands with all six basic-gate chips built._
 
 ## Stack
 
@@ -28,8 +28,8 @@ src/
     logic.test.ts        Truth tables, notation, 7408 pinout, catalog
   chips/
     index.ts             CATALOG: every chip in the nav; `chip` is undefined until built
-    layouts.ts           standardQuad2(kind): shared 7400/7408/7432/7486 pinout + gates
-    c7408.ts             7408 ChipDef (content + standardQuad2('AND'))
+    layouts.ts           fromGroups() pinout builder; standardQuad2(kind), norQuad2(), hexInverter()
+    c7400.ts … c7486.ts  One ChipDef per chip: content + a layouts.ts pinout
   state/
     useExplorer.ts       The single source of truth (waveforms + cursor) and all actions
   hooks/
@@ -161,8 +161,7 @@ so text stays crisp and doesn't stretch.
 - `inputX(y)`, where an input wire meets the back curve
 - `outX`
 
-All six kinds are implemented, but **only AND has been seen rendered**. Check the others visually
-when their chips are added.
+All six kinds have been checked rendered, in both the chip view and the focused gate.
 
 ## Styling
 
@@ -191,22 +190,17 @@ when their chips are added.
 ## How to add a chip
 
 1. Create `src/chips/cXXXX.ts` exporting a `ChipDef`. Write the content (`title`, `subtitle`,
-   `overview`, `readAs`) from the Lecture 2 deck (see `docs/CONTENT-MAP.md`) in the same voice as
-   `c7408.ts`.
-   - **7400 / 7432 / 7486:** `...standardQuad2('NAND' | 'OR' | 'XOR')`.
-   - **7402 and 7404:** these have their own pinouts. Add a helper to `layouts.ts` or list `pins`
-     and `gates` directly. Standard datasheet pinouts are below; **verify them against the deck's
-     pinout slides** (7402: slide 28, 7404: slide 22).
-     - 7402: 1 1Y, 2 1A, 3 1B, 4 2Y, 5 2A, 6 2B, 7 GND, 8 3A, 9 3B, 10 3Y, 11 4A, 12 4B, 13 4Y, 14 VCC
-     - 7404: 1 1A, 2 1Y, 3 2A, 4 2Y, 5 3A, 6 3Y, 7 GND, 8 4Y, 9 4A, 10 5Y, 11 5A, 12 6Y, 13 6A, 14 VCC
-     - The 7404 uses `inputLabels: ['A']`.
+   `overview`, `readAs`) from the deck (see `docs/CONTENT-MAP.md`) in the same voice as the
+   existing chips. For the pinout, add a helper to `layouts.ts` that calls
+   `fromGroups(kind, [{ inputs: [pinA, pinB], y: pinY }, ...])`, one group per gate in datasheet
+   order. It names pins `1A`, `1B`, `1Y`, … and adds GND (7) and VCC (14). **The datasheet
+   is the authority for pinouts and pin names** (D20). The decks often have errors; the 7402 and
+   7486 slides do.
 2. Set `chip:` on its entry in `CATALOG` (`src/chips/index.ts`).
-3. Add tests in `logic.test.ts`: a pin-number → name map against the datasheet, and an
-   `evaluateChip` check.
+3. Add the chip's datasheet pin map to `PINOUTS` in `logic.test.ts`. The `describe.each` block
+   then checks its pinout, gate wiring and per-gate evaluation.
 4. Run `npm test` and `npm run build`, then screenshot (see `CLAUDE.md`). Visually check the gate
-   shape and the ChipView routing, especially the 7402 (outputs first, so the output wire routes
-   upward) and the 7404 (three single-input gates per side). The routing algorithm should handle
-   both, but neither has been seen yet.
+   shape and the ChipView routing.
 5. Update `docs/STATUS.md`.
 
 ## Extending to sequential chips (Lecture 9)

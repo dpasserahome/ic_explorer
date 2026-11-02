@@ -167,7 +167,6 @@ Details: `docs/ARCHITECTURE.md`.
 
 ## Planned for v1, not yet built
 
-- The other five chips (7400, 7402, 7404, 7432, 7486).
 - **IEEE/IEC (rectangular) symbol toggle** for the gate drawings (deck slide 41). Where the toggle
   goes is an open question, because the top bar that held it was removed.
 

@@ -410,9 +410,19 @@ button:hover:not(:disabled) {
   min-height: 0;
   width: 100%;
 }
+.panel-title.row {
+  gap: 8px;
+}
+.panel-title.row > span:first-child {
+  white-space: nowrap;
+}
+/* Wrap rather than overflow: the 7404 has six tabs. */
 .gate-tabs {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 4px;
+  min-width: 0;
 }
 .tab {
   padding: 2px 10px;

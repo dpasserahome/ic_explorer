@@ -4,13 +4,14 @@ _Last updated 2026-11-02._
 
 ## Where we are
 
-**Phase:** v1, basic gates. **1 of 6 chips built (7408).**
+**Phase:** v1, basic gates. **All 6 chips built** (7400, 7402, 7404, 7408, 7432, 7486).
 
-**Current step:** the 7408 first pass is built, and the user has seen it ("Good"). **The user's
-detailed comments on the 7408 screen are pending.** They asked for full documentation before
-giving them. The next session should start by collecting and applying that feedback.
+**Current step:** the five remaining chips were added on the user's request. **The user hasn't
+reviewed them yet**, and their detailed comments on the 7408 screen are still pending. Start the
+next session by collecting that feedback, which now applies to every chip.
 
-Current look: `docs/img/2026-11-02-7408-first-pass-1280x720.png`.
+Current look: `docs/img/2026-11-02-7402-all-six-chips-1280x720.png` (the 7402; the 7408 first
+pass is `docs/img/2026-11-02-7408-first-pass-1280x720.png`).
 
 ## Done
 
@@ -28,16 +29,20 @@ Current look: `docs/img/2026-11-02-7408-first-pass-1280x720.png`.
       gate, truth table, and timing diagram (scrub, flip, play/step, presets, keyboard).
 - [x] Light and dark themes. Compact layout for 720p projectors. Basic stacked layout for narrow
       screens.
+- [x] **7400, 7402, 7404, 7432, 7486.** Pinouts checked against the deck's slides (16, 18, 22,
+      25, 28, 47) and the TI datasheets. Content written from Lecture 2. `layouts.ts` builds every
+      pinout from per-gate pin groups (`standardQuad2`, `norQuad2`, `hexInverter`).
 
 ## Verification so far
 
 | Check | Result |
 |-------|--------|
-| `npm test` | 7 tests pass (truth tables for all kinds, notation, 7408 pinout, 7408 evaluation, catalog) |
+| `npm test` | 24 tests pass: truth tables for all kinds, notation, and for each of the six chips its datasheet pinout, gate-to-pin wiring and per-gate evaluation; catalog |
 | `npm run build` | passes (type-check + bundle) |
 | Screenshots 1440×810, 1280×720, dark mode | look correct after two fixes (truth table clipping; timing label overlap) |
 | Interaction (clicks, drag-scrub, keyboard) | Click-tested 2026-11-02 by driving headless Chrome over the DevTools protocol at 1024×768, 1280×720 and 1440×810. Pin toggle, hover tracing, gate focus, truth-table row click, ← →, scrub, flip and Play/Pause work after fixing review bugs #1–4 (see below). The test script isn't in the repo, so there are still no automated UI tests |
 | 1024×768 (4:3 projector) | timing diagram's X row is clipped; see below |
+| All six chips | Screenshot at 1024×768, 1280×720, 1440×810 and in dark mode at 1280×720: no scrolling, shapes correct. Every input pin on every chip clicked in the UI; each drives only its own gate's output, with the right logic |
 | Narrow/mobile layout | not checked |
 
 ## Next steps (proposed order)
@@ -45,15 +50,15 @@ Current look: `docs/img/2026-11-02-7408-first-pass-1280x720.png`.
 1. **Apply the user's feedback** on the 7408 screen (pending).
 2. Fix the remaining review bugs (#5–7 under "Known gaps & limitations"), together with the
    user's feedback.
-3. Add **7400, 7432, 7486**. They share `standardQuad2`, so the main work is content (overview,
-   read-as) from Lecture 2 and visually checking the NAND/OR/XOR shapes, which haven't been seen
-   rendered yet.
-4. Add **7402** (outputs-first pinout) and **7404** (hex inverter: 6 single-input gates). Verify
-   the pinouts against deck slides 28 and 22, and check ChipView routing visually.
-5. **IEEE/IEC symbol toggle.** It's in the spec; where it goes is an open question (below).
-6. Decide hosting (GitHub Pages / Netlify / LMS) and deploy.
+3. User review of the five new chips (content wording, `readAs` phrasing; see D19).
+4. **IEEE/IEC symbol toggle.** It's in the spec; where it goes is an open question (below).
+5. Decide hosting (GitHub Pages / Netlify / LMS) and deploy.
 
 ## Open questions for the user
+
+- **`readAs` for NAND/NOR/NOT/XOR.** The deck only gives "read as" phrasing for AND and OR. The
+  agent chose "X equals NOT (A AND B)", "X equals NOT (A OR B)", "X equals NOT A" and "X equals A
+  XOR B". The user may prefer the phrasing they use in lecture (e.g. "A-bar").
 
 - **IEEE/IEC symbol toggle placement.** It was in the top bar, which the user removed. Options:
   side nav footer, header, or the focused-gate panel title.
@@ -70,7 +75,8 @@ Current look: `docs/img/2026-11-02-7408-first-pass-1280x720.png`.
   for all v1 chips; not for Lecture 9).
 - The engine is combinational only (no state, clock or Hi-Z). See `docs/ARCHITECTURE.md` →
   "Extending to sequential chips".
-- The OR/NOR/XOR/NAND/NOT gate shapes are implemented but haven't been seen rendered.
+- The header height varies a little between chips (3- or 4-line overviews), so the panels below
+  shift slightly when switching chips.
 - The `Random` preset isn't deterministic (`Math.random`).
 - Switching chips resets all state (by design: `Explorer` is keyed by part).
 - The narrow-screen layout is a simple stack and hasn't been designed or checked.
@@ -106,4 +112,6 @@ doesn't show this.
   Interactions click-tested over the DevTools protocol, and seven UI bugs logged under "Known gaps
   & limitations". At the user's request, fixed #1–4 (inspector height, Space after a click, sticky
   pin selection, drag to scrub over input rows). Re-verified with 18 scripted checks at 1024×768,
-  1280×720, 1440×810 and in dark mode, all passing.
+  1280×720, 1440×810 and in dark mode, all passing. Committed (`f5bf1ab`). Then added the
+  other five chips (7400, 7402, 7404, 7432, 7486), fixed six gate tabs overflowing at 1024×768,
+  and fixed "pins 1" wording for single-input gates.
