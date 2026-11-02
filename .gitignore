@@ -1,0 +1,6 @@
+node_modules
+dist
+.DS_Store
+
+# Course lecture decks stay local: the GitHub repo is public. See CLAUDE.md → Gotchas.
+Reference docs/

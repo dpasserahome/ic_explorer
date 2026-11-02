@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IC Explorer Wireframe</title>
+<style>
+  :root {
+    --bg: #f4f4f2;
+    --box: #ffffff;
+    --line: #9a9a96;
+    --ink: #222;
+    --muted: #6b6b66;
+    --p1: #d9480f;
+    --p2: #1c7ed6;
+    --p3: #868e96;
+    --gap: 12px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 14px/1.4 system-ui, -apple-system, sans-serif;
+  }
+
+  /* Generic wireframe box */
+  .box {
+    position: relative;
+    background: var(--box);
+    border: 2px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    min-width: 0;
+    min-height: 0;
+  }
+  .box h2 { margin: 0 0 4px; font-size: 18px; }
+  .box h3 { margin: 0 0 2px; font-size: 14px; }
+  .box p { margin: 0; color: var(--muted); font-size: 12px; max-width: 46ch; }
+  .tag {
+    position: absolute; top: 6px; left: 8px;
+    font-size: 11px; font-weight: 700; color: #fff;
+    padding: 1px 7px; border-radius: 10px;
+  }
+  .tag.p1 { background: var(--p1); }
+  .tag.p2 { background: var(--p2); }
+  .tag.p3 { background: var(--p3); }
+  .box.p1 { border-color: var(--p1); border-style: solid; }
+  .box.p2 { border-color: var(--p2); }
+
+  /* ---------- Above the fold: the lecture "stage" (fits one 16:9 screen) ---------- */
+  .stage {
+    height: 100vh;
+    min-height: 640px;
+    padding: var(--gap);
+    display: grid;
+    gap: var(--gap);
+    grid-template-columns: 7fr 5fr;
+    grid-template-rows: 52px 76px minmax(0, 1fr) minmax(170px, 30%);
+    grid-template-areas:
+      "top    top"
+      "head   head"
+      "chip   gate"
+      "timing timing";
+  }
+  .top    { grid-area: top; flex-direction: row; justify-content: space-between; padding: 6px 12px; }
+  .head   { grid-area: head; flex-direction: row; justify-content: space-between; gap: 16px; }
+  .chip   { grid-area: chip; }
+  .gate   { grid-area: gate; display: grid; gap: var(--gap); grid-template-rows: 3fr 2fr; padding: 0; border: none; background: none; }
+  .timing { grid-area: timing; }
+
+  .top .tabs { display: flex; gap: 6px; }
+  .top .tabs span {
+    border: 2px dashed var(--line); border-radius: 6px; padding: 4px 12px; font-weight: 700;
+  }
+  .top .tabs span.on { border-style: solid; border-color: var(--ink); }
+  .top .right { display: flex; gap: 6px; }
+  .top .right span { border: 1px dashed var(--line); border-radius: 6px; padding: 3px 8px; font-size: 12px; color: var(--muted); }
+
+  .head .slot { border: 1px dashed var(--line); border-radius: 6px; padding: 6px 12px; flex: 1; }
+  .head .slot.big { flex: 0 0 auto; font-size: 26px; font-weight: 800; }
+  .head .slot.eq { font-size: 22px; font-weight: 700; flex: 1.2; }
+
+  /* Chip view: the DIP package plus the pin inspector strip */
+  .chip { justify-content: flex-start; padding-top: 28px; }
+  .chip .inner { display: grid; grid-template-rows: 1fr auto; gap: 10px; width: 100%; height: 100%; }
+  .dip {
+    border: 2px solid var(--ink); border-radius: 6px;
+    display: grid; grid-template-columns: 40px 1fr 40px; align-items: stretch;
+    width: min(100%, 560px); margin: 0 auto; height: 100%; min-height: 0;
+  }
+  .pins { display: flex; flex-direction: column; justify-content: space-around; align-items: center; }
+  .pins i {
+    display: block; width: 26px; height: 18px; border: 1px solid var(--ink);
+    font-style: normal; font-size: 10px; line-height: 16px; background: #fafafa;
+  }
+  .dip .body {
+    border-left: 1px dashed var(--line); border-right: 1px dashed var(--line);
+    display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 8px; padding: 10px;
+  }
+  .dip .g { border: 1px dashed var(--line); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--muted); }
+  .dip .g.on { border: 2px solid var(--p1); color: var(--p1); font-weight: 700; }
+  .inspector { border: 1px dashed var(--p2); border-radius: 6px; padding: 6px 10px; font-size: 12px; color: var(--muted); text-align: left; }
+  .inspector b { color: var(--p2); }
+
+  /* Focused gate + truth table stack */
+  .gate .box { height: 100%; }
+
+  /* Timing */
+  .timing { justify-content: flex-start; padding-top: 28px; }
+  .timing .inner { width: 100%; height: 100%; display: grid; grid-template-columns: 1fr; grid-template-rows: 1fr auto; gap: 8px; }
+  .waves { display: grid; grid-template-columns: 40px 1fr; grid-auto-rows: 1fr; gap: 4px; position: relative; }
+  .waves .lbl { font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .waves .trk { border: 1px dashed var(--line); border-radius: 3px; }
+  .cursor { position: absolute; top: -4px; bottom: -4px; left: 30%; width: 2px; background: var(--p1); }
+  .cursor::after { content: "◀ drag to scrub ▶"; position: absolute; top: 2px; left: 6px; font-size: 10px; color: var(--p1); white-space: nowrap; }
+  .controls { display: flex; gap: 6px; justify-content: space-between; font-size: 12px; color: var(--muted); }
+  .controls span { border: 1px dashed var(--line); border-radius: 6px; padding: 3px 8px; }
+
+  /* ---------- Below the fold: reference / self-study ---------- */
+  .fold {
+    border-top: 3px dotted var(--p1);
+    margin: 0 var(--gap);
+    position: relative;
+  }
+  .fold::after {
+    content: "▲ projector fold: everything above fits one 16:9 screen, no scrolling";
+    position: absolute; right: 0; top: 4px; font-size: 11px; color: var(--p1); font-weight: 700;
+  }
+  .below {
+    padding: 32px var(--gap) var(--gap);
+    display: grid; gap: var(--gap);
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+  .below .box { min-height: 180px; }
+  .below .wide { grid-column: 1 / -1; min-height: 110px; }
+
+  /* Legend */
+  .legend {
+    padding: 0 var(--gap) 40px; display: flex; gap: 18px; flex-wrap: wrap; font-size: 12px; color: var(--muted);
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+  /* Narrow screens: stack everything */
+  @media (max-width: 860px) {
+    .stage {
+      height: auto;
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto 420px auto 220px;
+      grid-template-areas: "top" "head" "chip" "gate" "timing";
+    }
+    .gate { grid-template-rows: 240px 200px; }
+    .top, .head { flex-wrap: wrap; height: auto; }
+    .below { grid-template-columns: 1fr; }
+    .fold::after { position: static; display: block; }
+  }
+</style>
+</head>
+<body>
+
+<section class="stage">
+
+  <!-- Top bar -->
+  <div class="box top">
+    <strong>IC Explorer</strong>
+    <div class="tabs">
+      <span class="on">7400</span><span>7402</span><span>7404</span><span>7408</span><span>7432</span><span>7486</span>
+    </div>
+    <div class="right">
+      <span>Symbols: ANSI / IEC</span><span>Presenter mode</span><span>Reset</span>
+    </div>
+  </div>
+
+  <!-- Chip header -->
+  <div class="box head p1">
+    <span class="tag p1">P1</span>
+    <div class="slot big">7400</div>
+    <div class="slot">Quad 2-input NAND<br><small>4 independent gates · 14-pin DIP</small></div>
+    <div class="slot eq">X = (AB)′</div>
+    <div class="slot"><small>Rule: output is LOW only when all inputs are HIGH</small></div>
+  </div>
+
+  <!-- Chip view: pinout + internal gates -->
+  <div class="box chip p1">
+    <span class="tag p1">P1</span>
+    <h2>Chip view: pin diagram + internal gates</h2>
+    <div class="inner">
+      <div class="dip">
+        <div class="pins"><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i></div>
+        <div class="body">
+          <div class="g on">Gate 1 (focused)</div>
+          <div class="g">Gate 4</div>
+          <div class="g">Gate 2</div>
+          <div class="g">Gate 3</div>
+        </div>
+        <div class="pins"><i>14</i><i>13</i><i>12</i><i>11</i><i>10</i><i>9</i><i>8</i></div>
+      </div>
+      <div class="inspector">
+        <b>Pin inspector:</b> hover or click a pin, e.g. "Pin 2 (1B) → input B of Gate 1 → drives Pin 3 (1Y) = 1".
+        Clicking an input pin toggles it, and the signal path lights up.
+      </div>
+    </div>
+  </div>
+
+  <!-- Focused gate + truth table -->
+  <div class="gate">
+    <div class="box p1">
+      <span class="tag p1">P1</span>
+      <h2>Focused gate (enlarged)</h2>
+      <p>Big gate symbol for Gate 1. Large clickable A / B switches on the left and a large X output
+        indicator on the right. Wires colored HIGH/LOW.</p>
+    </div>
+    <div class="box p2">
+      <span class="tag p2">P2</span>
+      <h2>Truth table</h2>
+      <p>4 rows (A, B → X), large type. Current row highlighted, and clicking a row sets the inputs.</p>
+    </div>
+  </div>
+
+  <!-- Timing diagram -->
+  <div class="box timing p2">
+    <span class="tag p2">P2</span>
+    <h2 style="position:absolute;top:6px;left:50%;transform:translateX(-50%);">Timing diagram (Gate 1)</h2>
+    <div class="inner">
+      <div class="waves">
+        <div class="lbl">A</div><div class="trk"></div>
+        <div class="lbl">B</div><div class="trk"></div>
+        <div class="lbl">X</div><div class="trk"></div>
+        <div class="cursor"></div>
+      </div>
+      <div class="controls">
+        <span>◀ ▶ step</span><span>▶ play / pause</span>
+        <span>Presets: sweep · clock + enable · random</span>
+        <span>Click an input segment to flip it</span>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<div class="fold"></div>
+
+<!-- Below the fold -->
+<section class="below">
+  <div class="box p3">
+    <span class="tag p3">P3</span>
+    <h2>Overview</h2>
+    <p>What the chip is and what it's typically used for. Boolean equation with its "read as" phrasing.</p>
+  </div>
+  <div class="box p3">
+    <span class="tag p3">P3</span>
+    <h2>Applications</h2>
+    <p>Deck examples: enable/disable, bank alarm, parity, comparator, NAND as a universal gate.</p>
+  </div>
+  <div class="box p3">
+    <span class="tag p3">P3</span>
+    <h2>Pin reference table</h2>
+    <p>All 14 pins: number, name, role, gate, live value. A text alternative to the chip view.</p>
+  </div>
+  <div class="box wide p3">
+    <span class="tag p3">P3</span>
+    <h2>Notes & future slots</h2>
+    <p>Propagation delay note (idealized in v1). Room for predict mode and troubleshooting mode later.</p>
+  </div>
+</section>
+
+<div class="legend">
+  <span><b style="color:var(--p1)">P1</b> must be big and always visible; the core of the lesson</span>
+  <span><b style="color:var(--p2)">P2</b> always visible, but can be smaller</span>
+  <span><b style="color:var(--p3)">P3</b> reference / self-study, below the fold</span>
+</div>
+
+</body>
+</html>
