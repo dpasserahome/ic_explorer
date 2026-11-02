@@ -134,9 +134,11 @@ The user removed these from the earlier wireframe:
 
 ### Timing diagram
 - Rows A, B (inputs) and X (output) for the focused gate, over **16 discrete time steps**.
-- **Scrubbing.** Dragging across the diagram moves a cursor column. The pinout, focused gate and
+- **Scrubbing.** Pressing anywhere in the diagram moves the cursor column there, and dragging
+  scrubs it. The pinout, focused gate and
   truth table all show the values at that step.
-- **Editing.** Clicking an input row at a step flips that input at that step. The output
+- **Editing.** Clicking an input row at a step (without dragging off it) flips that input at
+  that step. The output
   recomputes, and the cursor jumps there.
 - **Controls:** ◀ ▶ step, Play/Pause (loops), ← → keys, and Space to play/pause.
 - **Presets** (apply to the focused gate):

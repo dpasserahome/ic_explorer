@@ -42,6 +42,7 @@ src/
     TruthTable.tsx       Computed truth table, current-row highlight, click to set inputs
     TimingDiagram.tsx    Waveforms, scrub cursor, flip-to-edit, play/step, presets
     GateSymbol.tsx       ANSI gate outline geometry (gateGeom) + <GateBody>
+    noPointerFocus.ts    onMouseDown helper: mouse clicks don't focus custom controls
 ```
 
 ## Data model (`src/sim/types.ts`)
@@ -128,10 +129,13 @@ diagram consistent with the pins, switches and truth table without any syncing c
   - Right-side gates are mirrored with `mx()` and `scale(-1,1)`.
 - **Tracing:** the hovered pin or gate decides the traced gate, and the others get `.dim`. A power
   pin traces nothing (`-1`), so nothing is dimmed.
-- **Inspector:** shows `hoverPin ?? selectedPin`, otherwise the hovered gate. Text comes from
-  `describe.ts`.
+- **Inspector:** shows the hovered pin, else the hovered gate, else the selected pin. Text comes
+  from `describe.ts`, with the title inline. The box has a **fixed 3-line height**: if hover text
+  changed its height, the chip SVG above would rescale and move pins under the pointer.
 - **Clicks:** clicking a pin selects it, toggles it if it's an input, and focuses its gate.
-  Clicking a gate's hit area focuses that gate.
+  Clicking a gate's hit area focuses that gate and clears the selection.
+- **Selection** is stored as `{ pin, focus }` and only shown while `focus` is unchanged, so
+  switching gates by any route (tab, gate, truth table) drops a stale pin highlight.
 
 **FocusedGate.** A fixed SVG `viewBox` (460×240) holding the switches (`role="switch"`), the
 gate (`gateGeom` at h=120), the lamp, and the HTML live equation below. G1–Gn tabs switch focus.
@@ -143,8 +147,10 @@ gate (`gateGeom` at h=120), the lamp, and the HTML live equation below. G1–Gn 
 so text stays crisp and doesn't stretch.
 - **Layout:** `LABEL_W` 120, `RULER_H` 24. The rows are the focused gate's inputs plus the output.
   `rowH = max(30, available / rows)`.
-- **Pointer handling:** a pointerdown that isn't on a `[data-flip]` rect starts a scrub with
-  pointer capture. Clicking a `[data-flip]` rect flips that step and moves the cursor there.
+- **Pointer handling:** any pointerdown moves the cursor to that step and starts a scrub with
+  pointer capture. On pointerup, if the press never left its starting step and began on a
+  `[data-flip]` rect (input rows; the attribute holds the input index), that step is flipped. So
+  dragging anywhere scrubs, and a click on an input step flips it.
 - **Output row:** computed per step with `evalGate`. This is combinational; see "Extending to
   sequential chips".
 
@@ -174,6 +180,9 @@ when their chips are added.
 
 - ← → step through time everywhere except text inputs. Space plays/pauses unless focus is on a
   button or another focusable control, where it activates that control instead.
+- Pins, switches and truth-table rows use `noPointerFocus` on mousedown: a mouse click doesn't
+  focus them (and blurs whatever was focused), so Space still means play/pause after clicking one.
+  Tab still reaches them, and Space/Enter activate them when focused from the keyboard.
 - Pins are `role="button"`, switches are `role="switch"` with `aria-checked`, gate selectors are
   `role="tab"`, and truth-table rows are focusable. The inspector and live equation are
   `aria-live="polite"`.

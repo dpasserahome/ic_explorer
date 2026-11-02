@@ -383,16 +383,21 @@ button:hover:not(:disabled) {
   fill: var(--lo);
 }
 
+/* Fixed height: if hover text changed it, the chip SVG above would rescale under the pointer. */
 .inspector {
-  min-height: 52px;
+  flex: none;
+  height: calc(3 * 1.4em + 18px);
+  overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--pin-bg);
   padding: 8px 12px;
   font-size: 14px;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
+  align-items: center;
+}
+.inspector p {
+  margin: 0;
 }
 .inspector strong {
   color: var(--accent);

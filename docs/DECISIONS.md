@@ -114,3 +114,14 @@ continues.
 The lecture decks are course material that probably includes textbook figures, and anything
 pushed to a public repo is effectively permanent. The folder is gitignored until the user says
 otherwise. `docs/CONTENT-MAP.md` gives agents without the files a summary of the decks.
+
+### D18 · Interaction fixes from the pre-UI review (2026-11-02 · User asked; details Agent, unreviewed)
+The user asked to "document all bugs and fix 1-4" from the review (bug list in `docs/STATUS.md`).
+The behavior choices were the agent's:
+- **Fixed-height pin inspector** (3 lines, title inline) so hovering never rescales the chip view.
+- **Mouse clicks don't focus pins, switches or truth-table rows.** Space after a click means
+  play/pause, as the lecture shortcut promises. Keyboard users still Tab to them.
+- **Pin selection follows gate focus.** It clears when another gate is focused or a gate is
+  clicked. Hovering a gate always explains that gate.
+- **Timing diagram: drag anywhere scrubs, a click on an input step flips it.** Previously input
+  rows (two thirds of the diagram) only flipped on click and ignored drags.

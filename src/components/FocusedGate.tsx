@@ -1,6 +1,7 @@
 import { expression } from '../sim/logic';
 import type { Bit, ChipDef } from '../sim/types';
 import { GateBody, gateGeom } from './GateSymbol';
+import { noPointerFocus } from './noPointerFocus';
 
 const W = 460;
 const H = 240;
@@ -82,6 +83,7 @@ export function FocusedGate({ chip, values, focus, onFocus, onTogglePin }: Props
               aria-checked={v(pin) === 1}
               aria-label={`Input ${labels[i]}, pin ${pin}`}
               tabIndex={0}
+              onMouseDown={noPointerFocus}
               onClick={toggle}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {

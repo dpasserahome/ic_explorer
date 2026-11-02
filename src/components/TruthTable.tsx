@@ -1,5 +1,6 @@
 import { truthTable } from '../sim/logic';
 import type { Bit, ChipDef } from '../sim/types';
+import { noPointerFocus } from './noPointerFocus';
 
 interface Props {
   chip: ChipDef;
@@ -34,6 +35,7 @@ export function TruthTable({ chip, values, focus, onSetInputs }: Props) {
               <tr
                 key={key}
                 className={on ? 'on' : undefined}
+                onMouseDown={noPointerFocus}
                 onClick={() => onSetInputs(focus, row.inputs)}
                 tabIndex={0}
                 aria-current={on ? 'true' : undefined}

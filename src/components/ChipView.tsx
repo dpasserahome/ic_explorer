@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { describeGate, describePin } from '../sim/describe';
 import type { Bit, ChipDef, GateDef } from '../sim/types';
 import { GateBody, gateGeom } from './GateSymbol';
+import { noPointerFocus } from './noPointerFocus';
 
 // Fixed drawing space; the SVG scales uniformly to fit its panel.
 const W = 600;
@@ -86,7 +87,9 @@ interface Props {
 export function ChipView({ chip, values, focus, onFocus, onTogglePin }: Props) {
   const [hoverPin, setHoverPin] = useState<number | null>(null);
   const [hoverGate, setHoverGate] = useState<number | null>(null);
-  const [selectedPin, setSelectedPin] = useState<number | null>(null);
+  // A clicked pin stays selected only while the gate focus it was clicked under is unchanged.
+  const [selection, setSelection] = useState<{ pin: number; focus: number } | null>(null);
+  const selectedPin = selection && selection.focus === focus ? selection.pin : null;
 
   const count = chip.pins.length;
   const gateOfPin = (p: number) => chip.gates.findIndex((g) => g.inputs.includes(p) || g.output === p);
@@ -98,7 +101,8 @@ export function ChipView({ chip, values, focus, onFocus, onTogglePin }: Props) {
   const v = (p: number): Bit => values[p] ?? 0;
   const lv = (p: number) => (v(p) ? 'hi' : 'lo');
 
-  const inspectorPin = hoverPin ?? selectedPin;
+  // Hover wins over the selection, so hovering a gate explains it even while a pin is selected.
+  const inspectorPin = hoverPin ?? (hoverGate === null ? selectedPin : null);
   const info =
     inspectorPin !== null
       ? describePin(chip, inspectorPin, values)
@@ -107,10 +111,14 @@ export function ChipView({ chip, values, focus, onFocus, onTogglePin }: Props) {
         : null;
 
   const clickPin = (p: number, role: string) => {
-    setSelectedPin(p);
     if (role === 'input') onTogglePin(p);
     const gi = gateOfPin(p);
     if (gi >= 0) onFocus(gi);
+    setSelection({ pin: p, focus: gi >= 0 ? gi : focus });
+  };
+  const clickGate = (gi: number) => {
+    setSelection(null);
+    onFocus(gi);
   };
 
   return (
@@ -135,7 +143,7 @@ export function ChipView({ chip, values, focus, onFocus, onTogglePin }: Props) {
                   className="gate-hit"
                   onMouseEnter={() => setHoverGate(gi)}
                   onMouseLeave={() => setHoverGate(null)}
-                  onClick={() => onFocus(gi)}
+                  onClick={() => clickGate(gi)}
                 />
                 {gi === focus && (
                   <rect x={L.halo.x} y={L.halo.y} width={L.halo.w} height={L.halo.h} rx={8} className="focus-halo" />
@@ -173,6 +181,7 @@ export function ChipView({ chip, values, focus, onFocus, onTogglePin }: Props) {
                 className={gi >= 0 && dim(gi) ? 'pin-group dim' : 'pin-group'}
                 onMouseEnter={() => setHoverPin(pin.num)}
                 onMouseLeave={() => setHoverPin(null)}
+                onMouseDown={noPointerFocus}
                 onClick={() => clickPin(pin.num, pin.role)}
                 role="button"
                 tabIndex={0}
@@ -210,14 +219,13 @@ export function ChipView({ chip, values, focus, onFocus, onTogglePin }: Props) {
       </div>
       <div className="inspector" aria-live="polite">
         {info ? (
-          <>
-            <strong>{info.title}</strong>
-            <span>{info.body}</span>
-          </>
+          <p>
+            <strong>{info.title}:</strong> {info.body}
+          </p>
         ) : (
-          <span className="muted">
+          <p className="muted">
             Hover or click a pin to trace its signal. Click an input pin to toggle it. Click a gate to focus it.
-          </span>
+          </p>
         )}
       </div>
     </section>

@@ -18,7 +18,9 @@ const PRESETS: { id: Preset; label: string }[] = [
 export function TimingDiagram({ chip, ex }: { chip: ChipDef; ex: Explorer }) {
   const [wrapRef, { width, height }] = useElementSize<HTMLDivElement>();
   const svgRef = useRef<SVGSVGElement>(null);
-  const scrubbing = useRef(false);
+  // A press anywhere starts a scrub. If it's released on the same step it started on, over an
+  // input row, it's a click and flips that input instead.
+  const press = useRef<{ step: number; input: number | null; moved: boolean } | null>(null);
 
   const gate = chip.gates[ex.focus];
   const gateWaves = ex.waves[ex.focus];
@@ -45,15 +47,25 @@ export function TimingDiagram({ chip, ex }: { chip: ChipDef; ex: Explorer }) {
   };
 
   const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
-    if ((e.target as Element).closest('[data-flip]')) return;
-    scrubbing.current = true;
+    const flip = (e.target as Element).closest('[data-flip]')?.getAttribute('data-flip');
+    const s = stepFromEvent(e);
+    press.current = { step: s, input: flip == null ? null : Number(flip), moved: false };
     e.currentTarget.setPointerCapture(e.pointerId);
-    ex.setCursor(stepFromEvent(e));
+    ex.setCursor(s);
   };
   const onPointerMove = (e: React.PointerEvent) => {
-    if (scrubbing.current) ex.setCursor(stepFromEvent(e));
+    const p = press.current;
+    if (!p) return;
+    const s = stepFromEvent(e);
+    if (s !== p.step) p.moved = true;
+    ex.setCursor(s);
   };
-  const endScrub = () => (scrubbing.current = false);
+  const onPointerUp = () => {
+    const p = press.current;
+    press.current = null;
+    if (p && !p.moved && p.input !== null) ex.flip(ex.focus, p.input, p.step);
+  };
+  const cancelPress = () => (press.current = null);
 
   const wavePath = (bits: Bit[], yHi: number, yLo: number) => {
     const y = (b: Bit) => (b ? yHi : yLo);
@@ -77,8 +89,8 @@ export function TimingDiagram({ chip, ex }: { chip: ChipDef; ex: Explorer }) {
             className="timing-svg"
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
-            onPointerUp={endScrub}
-            onPointerCancel={endScrub}
+            onPointerUp={onPointerUp}
+            onPointerCancel={cancelPress}
           >
             {/* Cursor column */}
             <rect x={xAt(ex.cursor)} y={0} width={slotW} height={totalH} className="cursor-band" />
@@ -132,16 +144,12 @@ export function TimingDiagram({ chip, ex }: { chip: ChipDef; ex: Explorer }) {
                     row.bits.map((_, s) => (
                       <rect
                         key={s}
-                        data-flip
+                        data-flip={row.input}
                         x={xAt(s)}
                         y={y0 + 2}
                         width={slotW}
                         height={rowH - 4}
                         className="flip-target"
-                        onClick={() => {
-                          ex.flip(ex.focus, row.input, s);
-                          ex.setCursor(s);
-                        }}
                       >
                         <title>{`Flip ${row.label} at step ${s}`}</title>
                       </rect>
